@@ -11,6 +11,12 @@ import {
   getSpecialties,
   type Doctor,
 } from '../../services/doctors'
+import {
+  getDoctorReviews,
+  getDoctorReviewStats,
+  type DoctorReview,
+  type DoctorReviewStats,
+} from '../../services/reviews'
 
 const WORKING_DAY_START_MINUTES = 9 * 60
 const WORKING_DAY_END_MINUTES = 18 * 60
@@ -87,6 +93,12 @@ export default function BookAppointment() {
   const redirectTimeoutRef = useRef<number | null>(null)
   const [specialties, setSpecialties] = useState<string[]>([])
   const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [reviewStatsByDoctorId, setReviewStatsByDoctorId] = useState<
+    Record<string, DoctorReviewStats>
+  >({})
+  const [reviewsByDoctorId, setReviewsByDoctorId] = useState<
+    Record<string, DoctorReview[]>
+  >({})
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([])
   const [specialty, setSpecialty] = useState('')
   const [doctorId, setDoctorId] = useState('')
@@ -145,6 +157,8 @@ export default function BookAppointment() {
     const loadDoctors = async () => {
       if (!specialty) {
         setDoctors([])
+        setReviewStatsByDoctorId({})
+        setReviewsByDoctorId({})
         setDoctorId('')
         setAvailableSlots([])
         setSelectedSlot('')
@@ -155,13 +169,35 @@ export default function BookAppointment() {
       setDoctorId('')
       setAvailableSlots([])
       setSelectedSlot('')
+      setReviewStatsByDoctorId({})
+      setReviewsByDoctorId({})
       setErrorMessage('')
 
       try {
         const data = await getDoctorsBySpecialty(specialty)
+        const reviewEntries = await Promise.all(
+          data.map(async (doctor) => {
+            const [stats, reviews] = await Promise.all([
+              getDoctorReviewStats(doctor.id),
+              getDoctorReviews(doctor.id),
+            ])
+
+            return [doctor.id, stats, reviews] as const
+          }),
+        )
 
         if (isMounted) {
           setDoctors(data)
+          setReviewStatsByDoctorId(
+            Object.fromEntries(
+              reviewEntries.map(([doctorId, stats]) => [doctorId, stats]),
+            ),
+          )
+          setReviewsByDoctorId(
+            Object.fromEntries(
+              reviewEntries.map(([doctorId, , reviews]) => [doctorId, reviews]),
+            ),
+          )
         }
       } catch (error) {
         if (isMounted) {
@@ -242,6 +278,8 @@ export default function BookAppointment() {
     setSpecialty('')
     setDoctorId('')
     setDoctors([])
+    setReviewStatsByDoctorId({})
+    setReviewsByDoctorId({})
     setAppointmentDay('')
     setAvailableSlots([])
     setSelectedSlot('')
@@ -249,6 +287,12 @@ export default function BookAppointment() {
   }
 
   const selectedDoctor = doctors.find((doctor) => doctor.id === doctorId)
+  const selectedDoctorReviewStats = selectedDoctor
+    ? reviewStatsByDoctorId[selectedDoctor.id]
+    : undefined
+  const selectedDoctorReviews = selectedDoctor
+    ? reviewsByDoctorId[selectedDoctor.id] ?? []
+    : []
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -390,6 +434,11 @@ export default function BookAppointment() {
                     <p className="mt-1 text-sm font-semibold text-teal-800">
                       {selectedDoctor.specialty}
                     </p>
+                    <p className="mt-2 text-sm font-bold text-amber-600">
+                      {selectedDoctorReviewStats?.reviewCount
+                        ? `⭐ ${selectedDoctorReviewStats.averageRating?.toFixed(1)} (${selectedDoctorReviewStats.reviewCount} تقييم)`
+                        : 'لا توجد تقييمات بعد'}
+                    </p>
 
                     <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                       <div>
@@ -424,6 +473,31 @@ export default function BookAppointment() {
                         </dd>
                       </div>
                     </dl>
+
+                    {selectedDoctorReviews.filter((review) => review.comment).length >
+                    0 ? (
+                      <div className="mt-4 rounded-lg bg-white/80 p-3">
+                        <p className="text-sm font-bold text-slate-800">
+                          أحدث تعليقات المرضى
+                        </p>
+                        <div className="mt-3 grid gap-2">
+                          {selectedDoctorReviews
+                            .filter((review) => review.comment)
+                            .slice(0, 3)
+                            .map((review) => (
+                              <blockquote
+                                key={review.id}
+                                className="rounded-lg bg-slate-50 px-3 py-2 text-sm leading-7 text-slate-700"
+                              >
+                                <span className="font-bold text-amber-600">
+                                  {'★'.repeat(review.rating)}
+                                </span>{' '}
+                                {review.comment}
+                              </blockquote>
+                            ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </article>

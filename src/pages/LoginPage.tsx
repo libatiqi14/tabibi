@@ -2,8 +2,13 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import type { UserRole } from '../context/AuthContext'
 
-function getDashboardPath(role: 'doctor' | 'patient') {
+function getDashboardPath(role: UserRole) {
+  if (role === 'admin') {
+    return '/admin'
+  }
+
   return role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'
 }
 

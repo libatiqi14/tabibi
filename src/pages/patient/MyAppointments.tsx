@@ -5,6 +5,10 @@ import {
   rescheduleAppointment,
   type Appointment,
 } from '../../services/appointments'
+import {
+  createDoctorReview,
+  getPatientReviewForAppointment,
+} from '../../services/reviews'
 
 const appointmentDateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
@@ -45,9 +49,18 @@ export default function MyAppointments() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [reschedulingAppointment, setReschedulingAppointment] =
     useState<Appointment | null>(null)
+  const [reviewingAppointment, setReviewingAppointment] =
+    useState<Appointment | null>(null)
+  const [reviewedAppointments, setReviewedAppointments] = useState<
+    Record<string, boolean>
+  >({})
   const [newAppointmentDate, setNewAppointmentDate] = useState('')
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState('')
   const [isRescheduling, setIsRescheduling] = useState(false)
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const [modalErrorMessage, setModalErrorMessage] = useState('')
+  const [reviewErrorMessage, setReviewErrorMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -58,6 +71,19 @@ export default function MyAppointments() {
     try {
       const data = await getPatientAppointments()
       setAppointments(data)
+
+      const completedAppointments = data.filter(
+        (appointment) => appointment.status === 'completed',
+      )
+      const reviewEntries = await Promise.all(
+        completedAppointments.map(async (appointment) => {
+          const review = await getPatientReviewForAppointment(appointment.id)
+
+          return [appointment.id, Boolean(review)] as const
+        }),
+      )
+
+      setReviewedAppointments(Object.fromEntries(reviewEntries))
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'تعذر تحميل المواعيد. يرجى المحاولة مرة أخرى.'
@@ -87,6 +113,26 @@ export default function MyAppointments() {
     setReschedulingAppointment(null)
     setNewAppointmentDate('')
     setModalErrorMessage('')
+  }
+
+  const openReviewModal = (appointment: Appointment) => {
+    setReviewingAppointment(appointment)
+    setReviewRating(0)
+    setReviewComment('')
+    setReviewErrorMessage('')
+    setSuccessMessage('')
+    setErrorMessage('')
+  }
+
+  const closeReviewModal = () => {
+    if (isSubmittingReview) {
+      return
+    }
+
+    setReviewingAppointment(null)
+    setReviewRating(0)
+    setReviewComment('')
+    setReviewErrorMessage('')
   }
 
   const handleCancelAppointment = async (appointmentId: string) => {
@@ -161,6 +207,52 @@ export default function MyAppointments() {
       setModalErrorMessage(message)
     } finally {
       setIsRescheduling(false)
+    }
+  }
+
+  const handleSubmitReview = async () => {
+    if (!reviewingAppointment) {
+      return
+    }
+
+    setReviewErrorMessage('')
+
+    if (!reviewingAppointment.doctor_id) {
+      setReviewErrorMessage('لا يمكن تقييم هذا الموعد لعدم توفر بيانات الطبيب.')
+      return
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewErrorMessage('يرجى اختيار تقييم من 1 إلى 5 نجوم.')
+      return
+    }
+
+    setIsSubmittingReview(true)
+
+    try {
+      await createDoctorReview({
+        appointment_id: reviewingAppointment.id,
+        doctor_id: reviewingAppointment.doctor_id,
+        rating: reviewRating,
+        comment: reviewComment,
+      })
+
+      setReviewedAppointments((currentReviews) => ({
+        ...currentReviews,
+        [reviewingAppointment.id]: true,
+      }))
+      setSuccessMessage('تم إرسال التقييم بنجاح.')
+      setReviewingAppointment(null)
+      setReviewRating(0)
+      setReviewComment('')
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'تعذر إرسال التقييم. يرجى المحاولة مرة أخرى.'
+      setReviewErrorMessage(message)
+    } finally {
+      setIsSubmittingReview(false)
     }
   }
 
@@ -240,24 +332,45 @@ export default function MyAppointments() {
                       </div>
                     </div>
 
-                    {appointment.status === 'scheduled' ? (
+                    {appointment.status === 'scheduled' ||
+                    appointment.status === 'completed' ? (
                       <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => openRescheduleModal(appointment)}
-                          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 text-sm font-bold text-teal-800 transition hover:bg-teal-100"
-                        >
-                          إعادة الجدولة
-                        </button>
+                        {appointment.status === 'completed' ? (
+                          reviewedAppointments[appointment.id] ? (
+                            <span className="inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
+                              تم التقييم
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openReviewModal(appointment)}
+                              className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-bold text-white transition hover:bg-teal-800"
+                            >
+                              تقييم الطبيب
+                            </button>
+                          )
+                        ) : null}
 
-                        <button
-                          type="button"
-                          onClick={() => void handleCancelAppointment(appointment.id)}
-                          disabled={cancellingId === appointment.id}
-                          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-rose-200 bg-white px-4 text-sm font-bold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {cancellingId === appointment.id ? 'جاري الإلغاء...' : 'إلغاء الموعد'}
-                        </button>
+                        {appointment.status === 'scheduled' ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openRescheduleModal(appointment)}
+                              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 px-4 text-sm font-bold text-teal-800 transition hover:bg-teal-100"
+                            >
+                              إعادة الجدولة
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleCancelAppointment(appointment.id)}
+                              disabled={cancellingId === appointment.id}
+                              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-rose-200 bg-white px-4 text-sm font-bold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {cancellingId === appointment.id ? 'جاري الإلغاء...' : 'إلغاء الموعد'}
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -330,6 +443,81 @@ export default function MyAppointments() {
                 className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRescheduling ? 'جاري الحفظ...' : 'حفظ'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reviewingAppointment ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-title"
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <h2 id="review-title" className="text-xl font-bold text-slate-950">
+              تقييم الطبيب
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              قيّم تجربتك مع {reviewingAppointment.doctor_name}.
+            </p>
+
+            <div className="mt-5 grid gap-2">
+              <p className="text-sm font-bold text-slate-800">التقييم</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setReviewRating(rating)}
+                    className={`text-3xl transition ${
+                      rating <= reviewRating ? 'text-amber-400' : 'text-slate-300'
+                    }`}
+                    aria-label={`${rating} نجوم`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-2">
+              <label className="text-sm font-bold text-slate-800" htmlFor="reviewComment">
+                تعليق اختياري
+              </label>
+              <textarea
+                id="reviewComment"
+                value={reviewComment}
+                onChange={(event) => setReviewComment(event.target.value)}
+                className="min-h-28 resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm leading-7 text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+                placeholder="اكتب ملاحظتك عن التجربة"
+              />
+            </div>
+
+            {reviewErrorMessage ? (
+              <p className="mt-4 rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold leading-7 text-rose-700">
+                {reviewErrorMessage}
+              </p>
+            ) : null}
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeReviewModal}
+                disabled={isSubmittingReview}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSubmitReview()}
+                disabled={isSubmittingReview}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}
               </button>
             </div>
           </div>

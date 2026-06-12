@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import DoctorAvailabilitySection from '../../components/doctor/DoctorAvailabilitySection'
 import DoctorAvatarSection, {
   DoctorAvatar,
@@ -13,10 +13,23 @@ import {
   type AppointmentStatus,
   type DoctorProfile,
 } from '../../services/doctor'
+import {
+  getDoctorAnalytics,
+  type DoctorAnalytics,
+} from '../../services/doctorAnalytics'
+import {
+  getDoctorStats,
+  type DoctorStats,
+} from '../../services/doctorStats'
 
 const appointmentDateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
   timeStyle: 'short',
+})
+
+const monthFormatter = new Intl.DateTimeFormat('ar-MA', {
+  month: 'short',
+  year: 'numeric',
 })
 
 const statusLabels: Record<AppointmentStatus, string> = {
@@ -48,16 +61,27 @@ function getPatientLabel(patientId: string) {
   return `مريض ${patientId.slice(0, 8)}`
 }
 
+function formatPercentage(value: number) {
+  return `${value.toFixed(1)}%`
+}
+
 export default function DoctorDashboard() {
   const { signOut } = useAuth()
   const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [doctorStats, setDoctorStats] = useState<DoctorStats | null>(null)
+  const [doctorAnalytics, setDoctorAnalytics] =
+    useState<DoctorAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [showAvatarSettings, setShowAvatarSettings] = useState(false)
   const [showProfessionalProfile, setShowProfessionalProfile] = useState(false)
   const [showAvailabilitySettings, setShowAvailabilitySettings] = useState(false)
+  const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false)
   const [showAppointments, setShowAppointments] = useState(false)
+  const [analyticsErrorMessage, setAnalyticsErrorMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -66,17 +90,37 @@ export default function DoctorDashboard() {
 
     const loadDashboard = async () => {
       setIsLoading(true)
+      setIsLoadingStats(true)
+      setIsLoadingAnalytics(true)
       setErrorMessage('')
+      setAnalyticsErrorMessage('')
 
       try {
-        const [doctorProfile, doctorAppointments] = await Promise.all([
-          getCurrentDoctor(),
+        const doctorProfile = await getCurrentDoctor()
+        const [doctorAppointments, stats, analyticsResult] = await Promise.all([
           getDoctorAppointments(),
+          getDoctorStats(doctorProfile.id),
+          getDoctorAnalytics(doctorProfile.id)
+            .then((analytics) => ({ analytics, error: null }))
+            .catch((error: unknown) => ({ analytics: null, error })),
         ])
 
         if (isMounted) {
           setDoctor(doctorProfile)
           setAppointments(doctorAppointments)
+          setDoctorStats(stats)
+
+          if (analyticsResult.analytics) {
+            setDoctorAnalytics(analyticsResult.analytics)
+          }
+
+          if (analyticsResult.error) {
+            const message =
+              analyticsResult.error instanceof Error
+                ? analyticsResult.error.message
+                : 'تعذر تحميل الإحصائيات التفصيلية. يرجى المحاولة مرة أخرى.'
+            setAnalyticsErrorMessage(message)
+          }
         }
       } catch (error) {
         if (isMounted) {
@@ -89,6 +133,8 @@ export default function DoctorDashboard() {
       } finally {
         if (isMounted) {
           setIsLoading(false)
+          setIsLoadingStats(false)
+          setIsLoadingAnalytics(false)
         }
       }
     }
@@ -99,24 +145,6 @@ export default function DoctorDashboard() {
       isMounted = false
     }
   }, [])
-
-  const statistics = useMemo(() => {
-    const now = Date.now()
-    const upcomingAppointments = appointments.filter(
-      (appointment) =>
-        ['scheduled', 'confirmed'].includes(appointment.status) &&
-        new Date(appointment.appointment_date).getTime() > now,
-    )
-    const completedAppointments = appointments.filter(
-      (appointment) => appointment.status === 'completed',
-    )
-
-    return {
-      total: appointments.length,
-      upcoming: upcomingAppointments.length,
-      completed: completedAppointments.length,
-    }
-  }, [appointments])
 
   const handleUpdateStatus = async (
     appointmentId: string,
@@ -145,6 +173,17 @@ export default function DoctorDashboard() {
       setUpdatingId(null)
     }
   }
+
+  const maxMonthlyAppointments = Math.max(
+    1,
+    ...(doctorAnalytics?.monthlyAppointments.map((month) => month.count) ?? [0]),
+  )
+  const maxRatingCount = Math.max(
+    1,
+    ...([1, 2, 3, 4, 5] as const).map(
+      (rating) => doctorAnalytics?.ratingDistribution[rating] ?? 0,
+    ),
+  )
 
   return (
     <main
@@ -189,27 +228,259 @@ export default function DoctorDashboard() {
           </p>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-600">إجمالي المواعيد</p>
+            <p className="text-sm font-semibold text-slate-600">👥 إجمالي المرضى</p>
             <p className="mt-3 text-3xl font-bold text-slate-950">
-              {isLoading ? '...' : statistics.total}
+              {isLoadingStats ? '...' : doctorStats?.totalPatients ?? 0}
             </p>
           </article>
 
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-600">المواعيد القادمة</p>
-            <p className="mt-3 text-3xl font-bold text-teal-700">
-              {isLoading ? '...' : statistics.upcoming}
+            <p className="text-sm font-semibold text-slate-600">📅 إجمالي المواعيد</p>
+            <p className="mt-3 text-3xl font-bold text-slate-950">
+              {isLoadingStats ? '...' : doctorStats?.totalAppointments ?? 0}
             </p>
           </article>
 
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-600">المواعيد المكتملة</p>
+            <p className="text-sm font-semibold text-slate-600">✅ المواعيد المكتملة</p>
             <p className="mt-3 text-3xl font-bold text-emerald-700">
-              {isLoading ? '...' : statistics.completed}
+              {isLoadingStats ? '...' : doctorStats?.completedAppointments ?? 0}
             </p>
           </article>
+
+          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-600">⭐ متوسط التقييم</p>
+            <p className="mt-3 text-3xl font-bold text-amber-600">
+              {isLoadingStats
+                ? '...'
+                : doctorStats?.averageRating != null
+                  ? doctorStats.averageRating.toFixed(1)
+                  : 'لا توجد'}
+            </p>
+          </article>
+
+          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold text-slate-600">💬 عدد التقييمات</p>
+            <p className="mt-3 text-3xl font-bold text-teal-700">
+              {isLoadingStats ? '...' : doctorStats?.reviewsCount ?? 0}
+            </p>
+          </article>
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <button
+            type="button"
+            onClick={() =>
+              setShowDetailedAnalytics((currentValue) => !currentValue)
+            }
+            className="flex w-full flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between"
+            aria-expanded={showDetailedAnalytics}
+          >
+            <span className="flex items-start gap-4">
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
+                aria-hidden="true"
+              >
+                📊
+              </span>
+              <span>
+                <span className="block text-xl font-bold tracking-normal text-slate-950">
+                  الإحصائيات التفصيلية
+                </span>
+                <span className="mt-2 block text-sm leading-7 text-slate-600">
+                  تابع أداء العيادة والمواعيد والتقييمات بشكل مفصل.
+                </span>
+              </span>
+            </span>
+
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700">
+              {showDetailedAnalytics ? '⌃' : '⌄'}
+            </span>
+          </button>
+
+          {showDetailedAnalytics ? (
+            <div className="mt-5 grid gap-5">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDetailedAnalytics(false)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  إخفاء الإحصائيات التفصيلية
+                </button>
+              </div>
+
+              {analyticsErrorMessage ? (
+                <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold leading-7 text-rose-700">
+                  {analyticsErrorMessage}
+                </p>
+              ) : null}
+
+              {isLoadingAnalytics ? (
+                <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+                  جاري تحميل الإحصائيات التفصيلية...
+                </p>
+              ) : doctorAnalytics ? (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-600">
+                        مواعيد اليوم
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-slate-950">
+                        {doctorAnalytics.todayAppointments}
+                      </p>
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-600">
+                        مواعيد هذا الأسبوع
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-teal-700">
+                        {doctorAnalytics.weekAppointments}
+                      </p>
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-600">
+                        مواعيد هذا الشهر
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-slate-950">
+                        {doctorAnalytics.monthAppointments}
+                      </p>
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-600">
+                        مرضى جدد هذا الشهر
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-emerald-700">
+                        {doctorAnalytics.newPatientsThisMonth}
+                      </p>
+                    </article>
+
+                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-semibold text-slate-600">
+                        معدل الإلغاء
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-rose-700">
+                        {formatPercentage(doctorAnalytics.cancelledRate)}
+                      </p>
+                    </article>
+                  </div>
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    <section className="rounded-lg border border-slate-200 p-4">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <h3 className="text-lg font-bold text-slate-950">
+                          المواعيد حسب الحالة
+                        </h3>
+                        <span className="text-sm font-semibold text-emerald-700">
+                          معدل الإكمال {formatPercentage(doctorAnalytics.completedRate)}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid gap-3">
+                        {(['scheduled', 'confirmed', 'completed', 'cancelled'] as const).map(
+                          (status) => (
+                            <div
+                              key={status}
+                              className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3"
+                            >
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset ${getStatusClass(
+                                  status,
+                                )}`}
+                              >
+                                {getStatusLabel(status)}
+                              </span>
+                              <span className="text-lg font-bold text-slate-950">
+                                {doctorAnalytics.byStatus[status]}
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 p-4">
+                      <h3 className="text-lg font-bold text-slate-950">
+                        توزيع التقييمات
+                      </h3>
+
+                      <div className="mt-4 grid gap-3">
+                        {([5, 4, 3, 2, 1] as const).map((rating) => {
+                          const count = doctorAnalytics.ratingDistribution[rating]
+                          const width = `${(count / maxRatingCount) * 100}%`
+
+                          return (
+                            <div key={rating} className="grid gap-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-bold text-amber-600">
+                                  {'★'.repeat(rating)}
+                                  <span className="text-slate-300">
+                                    {'★'.repeat(5 - rating)}
+                                  </span>
+                                </span>
+                                <span className="font-bold text-slate-700">
+                                  {count}
+                                </span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-amber-400"
+                                  style={{ width }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  </div>
+
+                  <section className="rounded-lg border border-slate-200 p-4">
+                    <h3 className="text-lg font-bold text-slate-950">
+                      المواعيد الشهرية خلال آخر 6 أشهر
+                    </h3>
+
+                    <div className="mt-4 grid gap-3">
+                      {doctorAnalytics.monthlyAppointments.map((month) => {
+                        const monthDate = new Date(`${month.month}-01T00:00:00`)
+                        const width = `${(month.count / maxMonthlyAppointments) * 100}%`
+
+                        return (
+                          <div
+                            key={month.month}
+                            className="grid gap-2 sm:grid-cols-[8rem_1fr_3rem] sm:items-center"
+                          >
+                            <span className="text-sm font-bold text-slate-700">
+                              {monthFormatter.format(monthDate)}
+                            </span>
+                            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className="h-full rounded-full bg-teal-600"
+                                style={{ width }}
+                              />
+                            </div>
+                            <span className="text-sm font-bold text-slate-950">
+                              {month.count}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                </>
+              ) : (
+                <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+                  لا توجد إحصائيات متاحة حالياً
+                </p>
+              )}
+            </div>
+          ) : null}
         </section>
 
         {doctor ? (

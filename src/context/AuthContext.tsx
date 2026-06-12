@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { getProfile } from '../services/profile'
 
-export type UserRole = 'doctor' | 'patient'
+export type UserRole = 'admin' | 'doctor' | 'patient'
 
 export interface UserProfile {
   id: string
@@ -32,7 +32,7 @@ type AuthProviderProps = {
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
 function isUserRole(role: string | null | undefined): role is UserRole {
-  return role === 'doctor' || role === 'patient'
+  return role === 'admin' || role === 'doctor' || role === 'patient'
 }
 
 async function fetchUserProfile(user: User): Promise<UserProfile> {

@@ -25,7 +25,7 @@ export type UpdateProfileData = Partial<
 >
 
 function isUserRole(role: string | null | undefined): role is UserRole {
-  return role === 'doctor' || role === 'patient'
+  return role === 'admin' || role === 'doctor' || role === 'patient'
 }
 
 function assertProfileRole(role: string | null | undefined): UserRole {

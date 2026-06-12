@@ -9,6 +9,10 @@ type ProtectedRouteProps = {
 }
 
 function getDashboardPath(role: UserRole) {
+  if (role === 'admin') {
+    return '/admin'
+  }
+
   return role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'
 }
 

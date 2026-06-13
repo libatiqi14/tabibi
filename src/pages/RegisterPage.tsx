@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import type { UserRole } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createDoctorProfile } from '../services/doctor'
+import { getSpecialtyMeta, MEDICAL_SPECIALTIES } from '../utils/specialties'
 
 const roleOptions: Array<{
   value: UserRole
@@ -58,7 +59,7 @@ export default function RegisterPage() {
     }
 
     if (role === 'doctor' && !specialty.trim()) {
-      setErrorMessage('يرجى إدخال تخصص الطبيب.')
+      setErrorMessage('يرجى اختيار تخصص الطبيب.')
       return
     }
 
@@ -128,13 +129,15 @@ export default function RegisterPage() {
 
   return (
     <main
-      className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8"
+      className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 px-4 py-8 text-slate-950 sm:px-6 lg:px-8"
       dir="rtl"
       lang="ar"
     >
-      <section className="mx-auto w-full max-w-3xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+      <section className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-md backdrop-blur sm:p-8">
         <div className="mb-8 text-center">
-          <p className="text-sm font-bold text-teal-700">نظام المواعيد الطبية</p>
+          <p className="inline-flex rounded-full bg-teal-50 px-3 py-1 text-sm font-bold text-teal-700 ring-1 ring-teal-100">
+            نظام المواعيد الطبية
+          </p>
           <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
             إنشاء حساب جديد
           </h1>
@@ -155,10 +158,10 @@ export default function RegisterPage() {
                     key={option.value}
                     type="button"
                     onClick={() => setRole(option.value)}
-                    className={`rounded-lg border p-4 text-right transition hover:-translate-y-0.5 hover:shadow-md ${
+                    className={`rounded-lg border p-5 text-right transition hover:-translate-y-0.5 hover:shadow-md ${
                       selected
                         ? 'border-teal-600 bg-teal-50 ring-4 ring-teal-100'
-                        : 'border-slate-200 bg-white hover:border-teal-200'
+                        : 'border-slate-200 bg-white hover:border-teal-200 hover:bg-slate-50'
                     }`}
                     aria-pressed={selected}
                   >
@@ -241,20 +244,29 @@ export default function RegisterPage() {
           </div>
 
           {role === 'doctor' ? (
-            <div className="grid gap-4 rounded-lg border border-teal-100 bg-teal-50/60 p-4">
+            <div className="grid gap-4 rounded-lg border border-teal-100 bg-teal-50/70 p-4 shadow-sm">
               <div className="grid gap-2">
                 <label className="text-sm font-bold text-slate-800" htmlFor="specialty">
                   التخصص
                 </label>
-                <input
+                <select
                   id="specialty"
-                  type="text"
                   value={specialty}
                   onChange={(event) => setSpecialty(event.target.value)}
                   className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
-                  placeholder="مثال: Cardiology"
                   required
-                />
+                >
+                  <option value="">اختر التخصص</option>
+                  {MEDICAL_SPECIALTIES.map((specialtyOption) => {
+                    const meta = getSpecialtyMeta(specialtyOption)
+
+                    return (
+                      <option key={specialtyOption} value={specialtyOption}>
+                        {meta.icon} {meta.labelAr}
+                      </option>
+                    )
+                  })}
+                </select>
               </div>
 
               <div className="grid gap-2">
@@ -288,7 +300,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
           </button>

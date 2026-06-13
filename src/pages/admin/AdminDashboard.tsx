@@ -335,17 +335,20 @@ export default function AdminDashboard() {
       lang="ar"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-teal-700">
-              لوحة تحكم الإدارة
-            </p>
-            <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
-              إدارة نظام المواعيد الطبية
-            </h1>
+        <header className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-lg font-black text-teal-700 ring-1 ring-teal-100">
+              T
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-teal-700">Tabibi</p>
+              <h1 className="mt-1 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">
+                لوحة الإدارة
+              </h1>
             <p className="mt-2 text-sm text-slate-600">
               {profile?.email ?? 'حساب الإدارة'}
             </p>
+            </div>
           </div>
 
           <button

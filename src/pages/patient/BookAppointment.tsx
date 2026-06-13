@@ -6,17 +6,14 @@ import {
   getAvailableSlots,
   type AvailableSlot,
 } from '../../services/availability'
-import {
-  getDoctorsBySpecialty,
-  getSpecialties,
-  type Doctor,
-} from '../../services/doctors'
+import { getDoctorsBySpecialty, type Doctor } from '../../services/doctors'
 import {
   getDoctorReviews,
   getDoctorReviewStats,
   type DoctorReview,
   type DoctorReviewStats,
 } from '../../services/reviews'
+import { MEDICAL_SPECIALTIES, getSpecialtyMeta } from '../../utils/specialties'
 
 const WORKING_DAY_START_MINUTES = 9 * 60
 const WORKING_DAY_END_MINUTES = 18 * 60
@@ -91,7 +88,6 @@ function getBookingErrorMessage(error: unknown) {
 export default function BookAppointment() {
   const navigate = useNavigate()
   const redirectTimeoutRef = useRef<number | null>(null)
-  const [specialties, setSpecialties] = useState<string[]>([])
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [reviewStatsByDoctorId, setReviewStatsByDoctorId] = useState<
     Record<string, DoctorReviewStats>
@@ -105,7 +101,6 @@ export default function BookAppointment() {
   const [appointmentDay, setAppointmentDay] = useState('')
   const [selectedSlot, setSelectedSlot] = useState('')
   const [notes, setNotes] = useState('')
-  const [isLoadingSpecialties, setIsLoadingSpecialties] = useState(true)
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false)
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -113,38 +108,7 @@ export default function BookAppointment() {
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    let isMounted = true
-
-    const loadSpecialties = async () => {
-      setIsLoadingSpecialties(true)
-      setErrorMessage('')
-
-      try {
-        const data = await getSpecialties()
-
-        if (isMounted) {
-          setSpecialties(data)
-        }
-      } catch (error) {
-        if (isMounted) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : 'تعذر تحميل التخصصات. يرجى المحاولة مرة أخرى.'
-          setErrorMessage(message)
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingSpecialties(false)
-        }
-      }
-    }
-
-    void loadSpecialties()
-
     return () => {
-      isMounted = false
-
       if (redirectTimeoutRef.current) {
         window.clearTimeout(redirectTimeoutRef.current)
       }
@@ -342,16 +306,26 @@ export default function BookAppointment() {
       lang="ar"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-teal-700">
-            نظام المواعيد الطبية
-          </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
-            حجز موعد جديد
-          </h1>
-          <p className="mt-2 text-sm leading-7 text-slate-600">
-            اختر التخصص والطبيب ثم اختر يوما ووقتا متاحا من جدول الطبيب.
-          </p>
+        <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-teal-700">
+              نظام المواعيد الطبية
+            </p>
+            <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
+              حجز موعد جديد
+            </h1>
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              اختر التخصص والطبيب ثم اختر يوما ووقتا متاحا من جدول الطبيب.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate('/patient/dashboard')}
+            className="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            ← رجوع إلى لوحة المريض
+          </button>
         </header>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -364,22 +338,27 @@ export default function BookAppointment() {
                 id="specialty"
                 value={specialty}
                 onChange={(event) => setSpecialty(event.target.value)}
-                disabled={isLoadingSpecialties}
                 className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 required
               >
-                <option value="">
-                  {isLoadingSpecialties
-                    ? 'جاري تحميل التخصصات...'
-                    : 'اختر التخصص'}
-                </option>
-                {specialties.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
+                <option value="">اختر التخصص</option>
+                {MEDICAL_SPECIALTIES.map((item) => {
+                  const meta = getSpecialtyMeta(item)
+
+                  return (
+                    <option key={item} value={item}>
+                      {meta.icon} {meta.labelAr}
+                    </option>
+                  )
+                })}
               </select>
             </div>
+
+            {specialty && !isLoadingDoctors && doctors.length === 0 ? (
+              <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+                لا يوجد أطباء في هذا التخصص حالياً
+              </p>
+            ) : null}
 
             <div className="grid gap-2">
               <label className="text-sm font-bold text-slate-800" htmlFor="doctor">
@@ -399,7 +378,7 @@ export default function BookAppointment() {
                     : isLoadingDoctors
                       ? 'جاري تحميل الأطباء...'
                       : doctors.length === 0
-                        ? 'لا يوجد أطباء لهذا التخصص'
+                        ? 'لا يوجد أطباء في هذا التخصص حالياً'
                         : 'اختر الطبيب'}
                 </option>
                 {doctors.map((doctor) => (

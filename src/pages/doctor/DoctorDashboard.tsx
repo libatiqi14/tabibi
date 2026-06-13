@@ -81,6 +81,7 @@ export default function DoctorDashboard() {
   const [showAvailabilitySettings, setShowAvailabilitySettings] = useState(false)
   const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false)
   const [showAppointments, setShowAppointments] = useState(false)
+  const [showDoctorSettings, setShowDoctorSettings] = useState(false)
   const [analyticsErrorMessage, setAnalyticsErrorMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -191,17 +192,20 @@ export default function DoctorDashboard() {
       dir="rtl"
       lang="ar"
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <header className="flex flex-col gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
             {doctor ? <DoctorAvatar doctor={doctor} /> : null}
 
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-teal-700">لوحة تحكم الطبيب</p>
-              <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
-                {isLoading ? 'جاري تحميل بيانات الطبيب...' : doctor?.full_name ?? 'الطبيب'}
+              <p className="text-sm font-bold text-teal-700">Tabibi</p>
+              <h1 className="mt-1 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">
+                لوحة الطبيب
               </h1>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-base font-bold text-slate-800">
+                {isLoading ? 'جاري تحميل بيانات الطبيب...' : doctor?.full_name ?? 'الطبيب'}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
                 {doctor?.specialty ?? 'التخصص غير متوفر'}
               </p>
             </div>
@@ -209,10 +213,15 @@ export default function DoctorDashboard() {
 
           <button
             type="button"
-            onClick={() => void signOut()}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            onClick={() => setShowDoctorSettings((currentValue) => !currentValue)}
+            className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-5 text-sm font-bold transition ${
+              showDoctorSettings
+                ? 'border-teal-600 bg-teal-50 text-teal-800'
+                : 'border-teal-200 bg-white text-teal-800 hover:bg-teal-50'
+            }`}
+            aria-expanded={showDoctorSettings}
           >
-            تسجيل الخروج
+            ⚙️ إعدادات الطبيب
           </button>
         </header>
 
@@ -269,7 +278,36 @@ export default function DoctorDashboard() {
           </article>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="order-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          {showDoctorSettings ? (
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-4">
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
+                    aria-hidden="true"
+                  >
+                    ⚙️
+                  </span>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-normal text-slate-950">
+                      إعدادات الطبيب
+                    </h2>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      أدر ملفك المهني وصورتك وساعات العمل والإحصائيات من مكان واحد.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDoctorSettings(false)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  إخفاء الإعدادات
+                </button>
+              </div>
+        <section className="order-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <button
             type="button"
             onClick={() =>
@@ -484,7 +522,7 @@ export default function DoctorDashboard() {
         </section>
 
         {doctor ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="order-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <button
               type="button"
               onClick={() =>
@@ -534,7 +572,7 @@ export default function DoctorDashboard() {
         ) : null}
 
         {doctor ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="order-2 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <button
               type="button"
               onClick={() =>
@@ -587,7 +625,7 @@ export default function DoctorDashboard() {
         ) : null}
 
         {doctor ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="order-1 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <button
               type="button"
               onClick={() =>
@@ -636,7 +674,11 @@ export default function DoctorDashboard() {
           </section>
         ) : null}
 
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            </div>
+          ) : null}
+        </section>
+
+        <section className="order-1 rounded-lg border border-teal-200 bg-teal-50/50 p-6 shadow-sm">
           <button
             type="button"
             onClick={() => setShowAppointments((currentValue) => !currentValue)}
@@ -645,13 +687,13 @@ export default function DoctorDashboard() {
           >
             <span className="flex items-start gap-4">
               <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-sm ring-1 ring-teal-100"
                 aria-hidden="true"
               >
                 📅
               </span>
               <span>
-                <span className="block text-xl font-bold tracking-normal text-slate-950">
+                <span className="block text-2xl font-black tracking-normal text-slate-950">
                   المواعيد
                 </span>
                 <span className="mt-2 block text-sm leading-7 text-slate-600">
@@ -788,6 +830,16 @@ export default function DoctorDashboard() {
             </div>
           ) : null}
         </section>
+
+        <div className="order-2 flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-rose-200 bg-white px-5 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
+          >
+            🚪 تسجيل الخروج
+          </button>
+        </div>
       </div>
     </main>
   )

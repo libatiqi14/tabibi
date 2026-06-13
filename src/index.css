@@ -1,113 +1,174 @@
 @import "tailwindcss";
 
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  --tabibi-primary: #0f766e;
+  --tabibi-primary-hover: #115e59;
+  --tabibi-primary-light: #f0fdfa;
+  --tabibi-accent: #10b981;
+  --tabibi-bg: #f8fafc;
+  --tabibi-surface: #ffffff;
+  --tabibi-text: #020617;
+  --tabibi-muted: #475569;
+  --tabibi-border: #e2e8f0;
+  --tabibi-danger: #e11d48;
+  --tabibi-warning: #f59e0b;
+  --tabibi-success: #059669;
+  font-family:
+    "Tajawal",
+    "Noto Sans Arabic",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: #f8fafc;
+}
+
 body {
+  min-width: 320px;
+  min-height: 100vh;
   margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.1), transparent 30rem),
+    linear-gradient(180deg, #f8fafc 0%, #f0fdfa 100%);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, 0.25);
+  outline-offset: 2px;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+a {
+  color: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+main[dir="rtl"] {
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.09), transparent 28rem),
+    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.07), transparent 24rem),
+    #f8fafc;
+}
+
+main[dir="rtl"] .rounded-lg {
+  border-radius: 1rem;
+}
+
+main[dir="rtl"] .shadow-sm {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 14px 30px rgba(15, 118, 110, 0.06);
+}
+
+main[dir="rtl"] .bg-white {
+  background-color: rgba(255, 255, 255, 0.98);
+}
+
+main[dir="rtl"] .border-slate-200 {
+  border-color: #e2e8f0;
+}
+
+main[dir="rtl"] header,
+main[dir="rtl"] section {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+main[dir="rtl"] article:hover,
+main[dir="rtl"] section > button:hover {
+  border-color: rgba(13, 148, 136, 0.22);
+}
+
+main[dir="rtl"] input,
+main[dir="rtl"] select,
+main[dir="rtl"] textarea {
+  border-color: #cbd5e1;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+
+main[dir="rtl"] input:focus,
+main[dir="rtl"] select:focus,
+main[dir="rtl"] textarea:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.14);
+}
+
+main[dir="rtl"] button {
+  touch-action: manipulation;
+}
+
+main[dir="rtl"] button[class*="bg-teal-700"] {
+  background-color: #0f766e;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.16);
+}
+
+main[dir="rtl"] button[class*="bg-teal-700"]:hover {
+  background-color: #115e59;
+}
+
+main[dir="rtl"] button[class*="border"] {
+  border-radius: 0.75rem;
+}
+
+main[dir="rtl"] [class*="overflow-hidden"][class*="border"] {
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+main[dir="rtl"] .divide-y > article:hover,
+main[dir="rtl"] .divide-y > div:hover {
+  background-color: #f8fafc;
+}
+
+main[dir="rtl"] [role="dialog"] > div {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1rem;
+}
+
+main[dir="rtl"] table,
+main[dir="rtl"] article,
+main[dir="rtl"] section {
+  scroll-margin-top: 24px;
+}
+
+::selection {
+  background: rgba(13, 148, 136, 0.18);
+  color: #0f172a;
 }

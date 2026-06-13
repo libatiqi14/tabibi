@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   cancelAppointment,
   getPatientAppointments,
@@ -44,6 +45,7 @@ function toDateTimeLocalValue(date: string) {
 }
 
 export default function MyAppointments() {
+  const navigate = useNavigate()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
@@ -263,14 +265,24 @@ export default function MyAppointments() {
       lang="ar"
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold text-teal-700">نظام المواعيد الطبية</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
-            مواعيدي
-          </h1>
-          <p className="mt-2 text-sm leading-7 text-slate-600">
-            استعرض جميع مواعيدك الطبية وتابع حالتها أو ألغ المواعيد المجدولة.
-          </p>
+        <header className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-teal-700">نظام المواعيد الطبية</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl">
+              مواعيدي
+            </h1>
+            <p className="mt-2 text-sm leading-7 text-slate-600">
+              استعرض جميع مواعيدك الطبية وتابع حالتها أو ألغ المواعيد المجدولة.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate('/patient/dashboard')}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            ← رجوع إلى لوحة المريض
+          </button>
         </header>
 
         {successMessage ? (

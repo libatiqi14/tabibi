@@ -18,6 +18,11 @@ export interface Doctor {
   created_at?: string | null
 }
 
+export interface FeaturedDoctor extends Doctor {
+  average_rating: number | null
+  reviews_count: number
+}
+
 export const doctorSelectFields =
   'id, full_name, specialty, clinic_name, phone, email, avatar_url, years_experience, medical_school, graduation_year, biography, languages, previous_hospitals, active, created_at'
 
@@ -54,4 +59,55 @@ export async function getDoctorsBySpecialty(specialty: string): Promise<Doctor[]
   }
 
   return (data ?? []) as Doctor[]
+}
+
+export async function getFeaturedDoctors(limit = 6): Promise<FeaturedDoctor[]> {
+  const { data: doctors, error: doctorsError } = await supabase
+    .from('doctors')
+    .select(doctorSelectFields)
+    .eq('active', true)
+
+  if (doctorsError) {
+    throw new Error(doctorsError.message)
+  }
+
+  const activeDoctors = (doctors ?? []) as Doctor[]
+
+  const doctorsWithStats = await Promise.all(
+    activeDoctors.map(async (doctor) => {
+      const { data: reviews, error: reviewsError } = await supabase
+        .from('doctor_reviews')
+        .select('rating')
+        .eq('doctor_id', doctor.id)
+
+      if (reviewsError) {
+        throw new Error(reviewsError.message)
+      }
+
+      const ratings = (reviews ?? []).map((review) => review.rating)
+      const averageRating =
+        ratings.length > 0
+          ? ratings.reduce((total, rating) => total + rating, 0) / ratings.length
+          : null
+
+      return {
+        ...doctor,
+        average_rating: averageRating,
+        reviews_count: ratings.length,
+      }
+    }),
+  )
+
+  return doctorsWithStats
+    .sort((firstDoctor, secondDoctor) => {
+      const ratingDifference =
+        (secondDoctor.average_rating ?? 0) - (firstDoctor.average_rating ?? 0)
+
+      if (ratingDifference !== 0) {
+        return ratingDifference
+      }
+
+      return secondDoctor.reviews_count - firstDoctor.reviews_count
+    })
+    .slice(0, limit)
 }

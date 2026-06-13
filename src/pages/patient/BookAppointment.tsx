@@ -3,8 +3,8 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createAppointment } from '../../services/appointments'
 import {
-  getAvailableSlots,
-  type AvailableSlot,
+  getDoctorDaySlots,
+  type DoctorDaySlot,
 } from '../../services/availability'
 import { getDoctorsBySpecialty, type Doctor } from '../../services/doctors'
 import {
@@ -44,7 +44,7 @@ function getSlotMinutes(slotStart: string) {
   return Number(hours) * 60 + Number(minutes)
 }
 
-function isAllowedSlot(slot: AvailableSlot) {
+function isAllowedSlot(slot: DoctorDaySlot) {
   const slotTime = slot.slot_start.slice(0, 5)
   const minutes = getSlotMinutes(slotTime)
 
@@ -76,6 +76,13 @@ function getBookingErrorMessage(error: unknown) {
   }
 
   if (
+    normalizedMessage.includes('doctor is unavailable on this day') ||
+    normalizedMessage.includes('unavailable on this day')
+  ) {
+    return 'الطبيب غير متاح في هذا اليوم. يرجى اختيار تاريخ آخر.'
+  }
+
+  if (
     normalizedMessage.includes('doctor_not_available') ||
     normalizedMessage.includes('working hours')
   ) {
@@ -95,7 +102,7 @@ export default function BookAppointment() {
   const [reviewsByDoctorId, setReviewsByDoctorId] = useState<
     Record<string, DoctorReview[]>
   >({})
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([])
+  const [daySlots, setDaySlots] = useState<DoctorDaySlot[]>([])
   const [specialty, setSpecialty] = useState('')
   const [doctorId, setDoctorId] = useState('')
   const [appointmentDay, setAppointmentDay] = useState('')
@@ -124,14 +131,14 @@ export default function BookAppointment() {
         setReviewStatsByDoctorId({})
         setReviewsByDoctorId({})
         setDoctorId('')
-        setAvailableSlots([])
+        setDaySlots([])
         setSelectedSlot('')
         return
       }
 
       setIsLoadingDoctors(true)
       setDoctorId('')
-      setAvailableSlots([])
+      setDaySlots([])
       setSelectedSlot('')
       setReviewStatsByDoctorId({})
       setReviewsByDoctorId({})
@@ -191,13 +198,13 @@ export default function BookAppointment() {
 
     const loadSlots = async () => {
       if (!doctorId || !appointmentDay) {
-        setAvailableSlots([])
+        setDaySlots([])
         setSelectedSlot('')
         return
       }
 
       setIsLoadingSlots(true)
-      setAvailableSlots([])
+      setDaySlots([])
       setSelectedSlot('')
       setErrorMessage('')
 
@@ -207,12 +214,12 @@ export default function BookAppointment() {
         console.log('BOOKING SELECTED DOCTOR ID', doctorId)
         console.log('BOOKING SELECTED DATE', sqlDate)
 
-        const slots = await getAvailableSlots(doctorId, sqlDate)
+        const slots = await getDoctorDaySlots(doctorId, sqlDate)
 
         console.log('BOOKING RETURNED AVAILABLE SLOTS', slots)
 
         if (isMounted) {
-          setAvailableSlots(slots.filter(isAllowedSlot))
+          setDaySlots(slots.filter(isAllowedSlot))
         }
       } catch (error) {
         console.log('BOOKING AVAILABLE SLOTS RPC ERROR', error)
@@ -245,7 +252,7 @@ export default function BookAppointment() {
     setReviewStatsByDoctorId({})
     setReviewsByDoctorId({})
     setAppointmentDay('')
-    setAvailableSlots([])
+    setDaySlots([])
     setSelectedSlot('')
     setNotes('')
   }
@@ -297,7 +304,6 @@ export default function BookAppointment() {
   }
 
   const doctorSelectDisabled = !specialty || isLoadingDoctors || doctors.length === 0
-  const slotsDisabled = !doctorId || !appointmentDay || isLoadingSlots
 
   return (
     <main
@@ -501,35 +507,63 @@ export default function BookAppointment() {
               />
             </div>
 
-            <div className="grid gap-2">
-              <label className="text-sm font-bold text-slate-800" htmlFor="slot">
-                الوقت المتاح
-              </label>
-              <select
-                id="slot"
-                value={selectedSlot}
-                onChange={(event) => setSelectedSlot(event.target.value)}
-                disabled={slotsDisabled || availableSlots.length === 0}
-                className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                required
-              >
-                <option value="">
-                  {!doctorId
-                    ? 'اختر الطبيب أولا'
-                    : !appointmentDay
-                      ? 'اختر التاريخ أولا'
-                      : isLoadingSlots
-                        ? 'جاري تحميل الأوقات المتاحة...'
-                        : availableSlots.length === 0
-                          ? 'لا توجد أوقات متاحة في هذا اليوم'
-                          : 'اختر الوقت'}
-                </option>
-                {availableSlots.map((slot) => (
-                  <option key={slot.slot_start} value={slot.slot_start}>
-                    {slot.slot_start}
-                  </option>
-                ))}
-              </select>
+            <div className="grid gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <label className="text-sm font-bold text-slate-800">
+                  الوقت المتاح
+                </label>
+                <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-600">
+                  <span>🟢 متاح</span>
+                  <span>🔴 محجوز</span>
+                </div>
+              </div>
+
+              {!doctorId ? (
+                <p className="rounded-lg bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  اختر الطبيب أولا
+                </p>
+              ) : !appointmentDay ? (
+                <p className="rounded-lg bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  اختر التاريخ أولا
+                </p>
+              ) : isLoadingSlots ? (
+                <p className="rounded-lg bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  جاري تحميل الأوقات المتاحة...
+                </p>
+              ) : daySlots.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                  {daySlots.map((slot) => {
+                    const isSelected = selectedSlot === slot.slot_start
+                    const isBooked = slot.status === 'booked'
+
+                    return (
+                      <button
+                        key={`${slot.slot_start}-${slot.status}`}
+                        type="button"
+                        onClick={() => {
+                          if (!isBooked) {
+                            setSelectedSlot(slot.slot_start)
+                          }
+                        }}
+                        disabled={isBooked}
+                        className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
+                          isSelected
+                            ? 'border-teal-700 bg-teal-700 text-white shadow-md'
+                            : isBooked
+                              ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
+                              : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        }`}
+                      >
+                        {getSlotTime(slot.slot_start)}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-lg bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
+                  لا توجد أوقات متاحة في هذا اليوم
+                </p>
+              )}
             </div>
 
             <div className="grid gap-2">

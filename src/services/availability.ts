@@ -23,6 +23,12 @@ export interface AvailableSlot {
   slot_end: string
 }
 
+export interface DoctorDaySlot {
+  slot_start: string
+  slot_end: string
+  status: 'available' | 'booked'
+}
+
 export async function getDoctorAvailability(
   doctorId: string,
 ): Promise<DoctorAvailability[]> {
@@ -80,4 +86,29 @@ export async function getAvailableSlots(
   }
 
   return (data ?? []) as AvailableSlot[]
+}
+
+export async function getDoctorDaySlots(
+  doctorId: string,
+  date: string,
+): Promise<DoctorDaySlot[]> {
+  console.log('GET DOCTOR DAY SLOTS PARAMS', {
+    doctorId,
+    date,
+  })
+
+  const { data, error } = await supabase.rpc('get_doctor_day_slots', {
+    p_doctor_id: doctorId,
+    p_date: date,
+    p_slot_minutes: 10,
+  })
+
+  console.log('GET DOCTOR DAY SLOTS RESULT', data)
+  console.log('GET DOCTOR DAY SLOTS ERROR', error)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []) as DoctorDaySlot[]
 }

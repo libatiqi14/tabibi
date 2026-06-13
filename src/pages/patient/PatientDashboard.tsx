@@ -8,8 +8,8 @@ import {
   type Appointment,
 } from '../../services/appointments'
 import {
-  getAvailableSlots,
-  type AvailableSlot,
+  getDoctorDaySlots,
+  type DoctorDaySlot,
 } from '../../services/availability'
 import {
   getFeaturedDoctors,
@@ -64,7 +64,7 @@ function getSlotMinutes(slotStart: string) {
   return Number(hours) * 60 + Number(minutes)
 }
 
-function isAllowedSlot(slot: AvailableSlot) {
+function isAllowedSlot(slot: DoctorDaySlot) {
   const slotTime = slot.slot_start.slice(0, 5)
   const minutes = getSlotMinutes(slotTime)
 
@@ -120,6 +120,13 @@ function getBookingErrorMessage(error: unknown) {
   }
 
   if (
+    normalizedMessage.includes('doctor is unavailable on this day') ||
+    normalizedMessage.includes('unavailable on this day')
+  ) {
+    return 'الطبيب غير متاح في هذا اليوم. يرجى اختيار تاريخ آخر.'
+  }
+
+  if (
     normalizedMessage.includes('doctor_not_available') ||
     normalizedMessage.includes('working hours')
   ) {
@@ -137,7 +144,7 @@ export default function PatientDashboard() {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [showNotificationsModal, setShowNotificationsModal] = useState(false)
   const [showAppointmentsModal, setShowAppointmentsModal] = useState(false)
-  const [showMedicalRecords, setShowMedicalRecords] = useState(false)
+  const [showMedicalRecordsModal, setShowMedicalRecordsModal] = useState(false)
   const [showDoctorsDirectory, setShowDoctorsDirectory] = useState(false)
   const [selectedSpecialty, setSelectedSpecialty] = useState('')
   const [doctors, setDoctors] = useState<DoctorDirectoryItem[]>([])
@@ -149,7 +156,7 @@ export default function PatientDashboard() {
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
   const [bookingNotes, setBookingNotes] = useState('')
-  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([])
+  const [daySlots, setDaySlots] = useState<DoctorDaySlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [submittingBooking, setSubmittingBooking] = useState(false)
   const [bookingError, setBookingError] = useState('')
@@ -227,6 +234,24 @@ export default function PatientDashboard() {
   }, [showNotificationsModal])
 
   useEffect(() => {
+    if (!showMedicalRecordsModal) {
+      return undefined
+    }
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMedicalRecordsModal(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEscapeKey)
+
+    return () => {
+      window.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [showMedicalRecordsModal])
+
+  useEffect(() => {
     let isMounted = true
 
     if (!selectedSpecialty) {
@@ -279,7 +304,7 @@ export default function PatientDashboard() {
     let isMounted = true
 
     if (!activeBookingDoctorId || !bookingDate) {
-      setAvailableSlots([])
+      setDaySlots([])
       setBookingTime('')
 
       return () => {
@@ -289,16 +314,16 @@ export default function PatientDashboard() {
 
     const fetchAvailableSlots = async () => {
       setLoadingSlots(true)
-      setAvailableSlots([])
+      setDaySlots([])
       setBookingTime('')
       setBookingError('')
 
       try {
         const sqlDate = toSqlDate(bookingDate)
-        const slots = await getAvailableSlots(activeBookingDoctorId, sqlDate)
+        const slots = await getDoctorDaySlots(activeBookingDoctorId, sqlDate)
 
         if (isMounted) {
-          setAvailableSlots(slots.filter(isAllowedSlot))
+          setDaySlots(slots.filter(isAllowedSlot))
         }
       } catch (error) {
         if (isMounted) {
@@ -403,7 +428,7 @@ export default function PatientDashboard() {
     setBookingDate('')
     setBookingTime('')
     setBookingNotes('')
-    setAvailableSlots([])
+    setDaySlots([])
     setBookingError('')
   }
 
@@ -491,6 +516,61 @@ export default function PatientDashboard() {
       setSubmittingBooking(false)
     }
   }
+
+  const renderBookingSlotGrid = () => (
+    <div className="grid gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-sm font-bold text-slate-800">الوقت المتاح</span>
+        <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-600">
+          <span>🟢 متاح</span>
+          <span>🔴 محجوز</span>
+        </div>
+      </div>
+
+      {!bookingDate ? (
+        <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
+          اختر التاريخ أولاً
+        </p>
+      ) : loadingSlots ? (
+        <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
+          جاري تحميل الأوقات...
+        </p>
+      ) : daySlots.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+          {daySlots.map((slot) => {
+            const isSelected = bookingTime === slot.slot_start
+            const isBooked = slot.status === 'booked'
+
+            return (
+              <button
+                key={`${slot.slot_start}-${slot.status}`}
+                type="button"
+                onClick={() => {
+                  if (!isBooked) {
+                    setBookingTime(slot.slot_start)
+                  }
+                }}
+                disabled={isBooked}
+                className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
+                  isSelected
+                    ? 'border-teal-700 bg-teal-700 text-white shadow-md'
+                    : isBooked
+                      ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
+                      : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                {getSlotTime(slot.slot_start)}
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
+          لا توجد أوقات متاحة في هذا اليوم
+        </p>
+      )}
+    </div>
+  )
 
   return (
     <main
@@ -592,13 +672,13 @@ export default function PatientDashboard() {
 
           <button
             type="button"
-            onClick={() => setShowMedicalRecords((currentValue) => !currentValue)}
+            onClick={() => setShowMedicalRecordsModal(true)}
             className={`group rounded-2xl border p-5 text-right shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
-              showMedicalRecords
+              showMedicalRecordsModal
                 ? 'border-teal-600 bg-teal-50'
                 : 'border-slate-200 bg-white hover:border-teal-200'
             }`}
-            aria-expanded={showMedicalRecords}
+            aria-expanded={showMedicalRecordsModal}
           >
             <span className="flex items-start justify-between gap-4">
               <span>
@@ -613,7 +693,7 @@ export default function PatientDashboard() {
                 </span>
               </span>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-700">
-                {showMedicalRecords ? '⌃' : '⌄'}
+                {showMedicalRecordsModal ? '⌃' : '⌄'}
               </span>
             </span>
             <span className="mt-6 inline-flex rounded-xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
@@ -798,39 +878,8 @@ export default function PatientDashboard() {
                             />
                           </div>
 
-                          <div className="grid gap-2">
-                            <label
-                              className="text-sm font-bold text-slate-800"
-                              htmlFor={`featured-booking-time-${doctor.id}`}
-                            >
-                              الوقت المتاح
-                            </label>
-                            <select
-                              id={`featured-booking-time-${doctor.id}`}
-                              value={bookingTime}
-                              onChange={(event) => setBookingTime(event.target.value)}
-                              disabled={
-                                !bookingDate ||
-                                loadingSlots ||
-                                availableSlots.length === 0
-                              }
-                              className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                            >
-                              <option value="">
-                                {!bookingDate
-                                  ? 'اختر التاريخ أولاً'
-                                  : loadingSlots
-                                    ? 'جاري تحميل الأوقات...'
-                                    : availableSlots.length === 0
-                                      ? 'لا توجد أوقات متاحة في هذا اليوم'
-                                      : 'اختر الوقت'}
-                              </option>
-                              {availableSlots.map((slot) => (
-                                <option key={slot.slot_start} value={slot.slot_start}>
-                                  {getSlotTime(slot.slot_start)}
-                                </option>
-                              ))}
-                            </select>
+                          <div className="sm:col-span-2">
+                            {renderBookingSlotGrid()}
                           </div>
                         </div>
 
@@ -1145,44 +1194,8 @@ export default function PatientDashboard() {
                                   />
                                 </div>
 
-                                <div className="grid gap-2">
-                                  <label
-                                    className="text-sm font-bold text-slate-800"
-                                    htmlFor={`booking-time-${doctor.id}`}
-                                  >
-                                    الوقت المتاح
-                                  </label>
-                                  <select
-                                    id={`booking-time-${doctor.id}`}
-                                    value={bookingTime}
-                                    onChange={(event) =>
-                                      setBookingTime(event.target.value)
-                                    }
-                                    disabled={
-                                      !bookingDate ||
-                                      loadingSlots ||
-                                      availableSlots.length === 0
-                                    }
-                                    className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                                  >
-                                    <option value="">
-                                      {!bookingDate
-                                        ? 'اختر التاريخ أولاً'
-                                        : loadingSlots
-                                          ? 'جاري تحميل الأوقات...'
-                                          : availableSlots.length === 0
-                                            ? 'لا توجد أوقات متاحة في هذا اليوم'
-                                            : 'اختر الوقت'}
-                                    </option>
-                                    {availableSlots.map((slot) => (
-                                      <option
-                                        key={slot.slot_start}
-                                        value={slot.slot_start}
-                                      >
-                                        {getSlotTime(slot.slot_start)}
-                                      </option>
-                                    ))}
-                                  </select>
+                                <div className="md:col-span-2">
+                                  {renderBookingSlotGrid()}
                                 </div>
                               </div>
 
@@ -1333,21 +1346,57 @@ export default function PatientDashboard() {
           </div>
         ) : null}
 
-        {showMedicalRecords ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div>
-              <h2 className="text-xl font-bold tracking-normal text-slate-950">
-                السجلات الطبية
-              </h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                استعرض ملخصات الزيارات والوصفات والتقارير الطبية.
-              </p>
-            </div>
+        {showMedicalRecordsModal ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="medical-records-modal-title"
+            onClick={() => setShowMedicalRecordsModal(false)}
+          >
+            <section
+              className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-teal-700">لوحة المريض</p>
+                  <h2
+                    id="medical-records-modal-title"
+                    className="mt-1 text-2xl font-black tracking-normal text-slate-950"
+                  >
+                    السجلات الطبية
+                  </h2>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    استعرض ملخصات الزيارات والوصفات والتقارير الطبية.
+                  </p>
+                </div>
 
-            <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-              لا توجد سجلات طبية بعد
-            </p>
-          </section>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMedicalRecordsModal(false)}
+                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    إغلاق
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowMedicalRecordsModal(false)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg font-bold text-slate-700 transition hover:bg-slate-50"
+                    aria-label="إغلاق"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
+                لا توجد سجلات طبية بعد
+              </p>
+            </section>
+          </div>
         ) : null}
 
         {showNotificationsModal ? (

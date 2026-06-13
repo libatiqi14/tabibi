@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
-import DoctorAvailabilitySection from '../../components/doctor/DoctorAvailabilitySection'
-import DoctorAvatarSection, {
-  DoctorAvatar,
-} from '../../components/doctor/DoctorAvatarSection'
-import DoctorProfessionalProfileSection from '../../components/doctor/DoctorProfessionalProfileSection'
+import { useNavigate } from 'react-router-dom'
+import { DoctorAvatar } from '../../components/doctor/DoctorAvatarSection'
 import { useAuth } from '../../hooks/useAuth'
 import type { Appointment } from '../../services/appointments'
 import {
@@ -14,10 +11,6 @@ import {
   type DoctorProfile,
 } from '../../services/doctor'
 import {
-  getDoctorAnalytics,
-  type DoctorAnalytics,
-} from '../../services/doctorAnalytics'
-import {
   getDoctorStats,
   type DoctorStats,
 } from '../../services/doctorStats'
@@ -25,11 +18,6 @@ import {
 const appointmentDateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
   timeStyle: 'short',
-})
-
-const monthFormatter = new Intl.DateTimeFormat('ar-MA', {
-  month: 'short',
-  year: 'numeric',
 })
 
 const statusLabels: Record<AppointmentStatus, string> = {
@@ -40,10 +28,10 @@ const statusLabels: Record<AppointmentStatus, string> = {
 }
 
 const statusClasses: Record<AppointmentStatus, string> = {
-  scheduled: 'bg-amber-50 text-amber-800 ring-amber-600/20',
-  confirmed: 'bg-teal-50 text-teal-800 ring-teal-600/20',
-  completed: 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-  cancelled: 'bg-rose-50 text-rose-800 ring-rose-600/20',
+  scheduled: 'border border-amber-200 bg-amber-100 text-amber-700',
+  confirmed: 'border border-green-200 bg-green-100 text-green-700',
+  completed: 'border border-blue-200 bg-blue-100 text-blue-700',
+  cancelled: 'border border-red-200 bg-red-100 text-red-700',
 }
 
 function getStatusLabel(status: string) {
@@ -61,30 +49,40 @@ function getPatientLabel(patientId: string) {
   return `مريض ${patientId.slice(0, 8)}`
 }
 
-function formatPercentage(value: number) {
-  return `${value.toFixed(1)}%`
+function isTodayAppointment(appointment: Appointment) {
+  const appointmentDate = new Date(appointment.appointment_date)
+  const today = new Date()
+
+  return (
+    appointmentDate.getFullYear() === today.getFullYear() &&
+    appointmentDate.getMonth() === today.getMonth() &&
+    appointmentDate.getDate() === today.getDate()
+  )
 }
 
 export default function DoctorDashboard() {
+  const navigate = useNavigate()
   const { signOut } = useAuth()
   const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [doctorStats, setDoctorStats] = useState<DoctorStats | null>(null)
-  const [doctorAnalytics, setDoctorAnalytics] =
-    useState<DoctorAnalytics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [showAvatarSettings, setShowAvatarSettings] = useState(false)
-  const [showProfessionalProfile, setShowProfessionalProfile] = useState(false)
-  const [showAvailabilitySettings, setShowAvailabilitySettings] = useState(false)
-  const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false)
   const [showAppointments, setShowAppointments] = useState(false)
-  const [showDoctorSettings, setShowDoctorSettings] = useState(false)
-  const [analyticsErrorMessage, setAnalyticsErrorMessage] = useState('')
+  const [showDoctorSettingsMenu, setShowDoctorSettingsMenu] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const todayAppointmentsCount = appointments.filter(isTodayAppointment).length
+  const confirmedAppointmentsCount = appointments.filter(
+    (appointment) => appointment.status === 'confirmed',
+  ).length
+  const completedAppointmentsCount = appointments.filter(
+    (appointment) => appointment.status === 'completed',
+  ).length
+  const cancelledAppointmentsCount = appointments.filter(
+    (appointment) => appointment.status === 'cancelled',
+  ).length
 
   useEffect(() => {
     let isMounted = true
@@ -92,36 +90,19 @@ export default function DoctorDashboard() {
     const loadDashboard = async () => {
       setIsLoading(true)
       setIsLoadingStats(true)
-      setIsLoadingAnalytics(true)
       setErrorMessage('')
-      setAnalyticsErrorMessage('')
 
       try {
         const doctorProfile = await getCurrentDoctor()
-        const [doctorAppointments, stats, analyticsResult] = await Promise.all([
+        const [doctorAppointments, stats] = await Promise.all([
           getDoctorAppointments(),
           getDoctorStats(doctorProfile.id),
-          getDoctorAnalytics(doctorProfile.id)
-            .then((analytics) => ({ analytics, error: null }))
-            .catch((error: unknown) => ({ analytics: null, error })),
         ])
 
         if (isMounted) {
           setDoctor(doctorProfile)
           setAppointments(doctorAppointments)
           setDoctorStats(stats)
-
-          if (analyticsResult.analytics) {
-            setDoctorAnalytics(analyticsResult.analytics)
-          }
-
-          if (analyticsResult.error) {
-            const message =
-              analyticsResult.error instanceof Error
-                ? analyticsResult.error.message
-                : 'تعذر تحميل الإحصائيات التفصيلية. يرجى المحاولة مرة أخرى.'
-            setAnalyticsErrorMessage(message)
-          }
         }
       } catch (error) {
         if (isMounted) {
@@ -135,7 +116,6 @@ export default function DoctorDashboard() {
         if (isMounted) {
           setIsLoading(false)
           setIsLoadingStats(false)
-          setIsLoadingAnalytics(false)
         }
       }
     }
@@ -175,17 +155,6 @@ export default function DoctorDashboard() {
     }
   }
 
-  const maxMonthlyAppointments = Math.max(
-    1,
-    ...(doctorAnalytics?.monthlyAppointments.map((month) => month.count) ?? [0]),
-  )
-  const maxRatingCount = Math.max(
-    1,
-    ...([1, 2, 3, 4, 5] as const).map(
-      (rating) => doctorAnalytics?.ratingDistribution[rating] ?? 0,
-    ),
-  )
-
   return (
     <main
       className="min-h-screen bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8"
@@ -211,18 +180,64 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowDoctorSettings((currentValue) => !currentValue)}
-            className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-5 text-sm font-bold transition ${
-              showDoctorSettings
-                ? 'border-teal-600 bg-teal-50 text-teal-800'
-                : 'border-teal-200 bg-white text-teal-800 hover:bg-teal-50'
-            }`}
-            aria-expanded={showDoctorSettings}
-          >
-            ⚙️ إعدادات الطبيب
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() =>
+                setShowDoctorSettingsMenu((currentValue) => !currentValue)
+              }
+              className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-5 text-sm font-bold transition ${
+                showDoctorSettingsMenu
+                  ? 'border-teal-600 bg-teal-50 text-teal-800'
+                  : 'border-teal-200 bg-white text-teal-800 hover:bg-teal-50'
+              }`}
+              aria-expanded={showDoctorSettingsMenu}
+            >
+              ⚙️ إعدادات الطبيب
+            </button>
+
+            {showDoctorSettingsMenu ? (
+              <div className="absolute left-0 z-20 mt-3 w-72 rounded-xl border border-slate-200 bg-white p-2 text-right shadow-sm">
+                {[
+                  {
+                    icon: '👨‍⚕️',
+                    label: 'الملف المهني',
+                    path: '/doctor/settings/profile',
+                  },
+                  {
+                    icon: '🖼️',
+                    label: 'الصورة الشخصية',
+                    path: '/doctor/settings/avatar',
+                  },
+                  {
+                    icon: '🕒',
+                    label: 'ساعات العمل',
+                    path: '/doctor/settings/availability',
+                  },
+                  {
+                    icon: '📅',
+                    label: 'أيام العطل والإجازات',
+                    path: '/doctor/settings/unavailable-days',
+                  },
+                  {
+                    icon: '📊',
+                    label: 'الإحصائيات التفصيلية',
+                    path: '/doctor/settings/analytics',
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.path}
+                    type="button"
+                    onClick={() => navigate(item.path)}
+                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-right text-sm font-bold text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </header>
 
         {errorMessage ? (
@@ -278,407 +293,49 @@ export default function DoctorDashboard() {
           </article>
         </section>
 
-        <section className="order-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          {showDoctorSettings ? (
-            <div className="grid gap-4">
-              <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
-                    aria-hidden="true"
-                  >
-                    ⚙️
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold tracking-normal text-slate-950">
-                      إعدادات الطبيب
-                    </h2>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      أدر ملفك المهني وصورتك وساعات العمل والإحصائيات من مكان واحد.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDoctorSettings(false)}
-                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                >
-                  إخفاء الإعدادات
-                </button>
-              </div>
-        <section className="order-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <button
-            type="button"
-            onClick={() =>
-              setShowDetailedAnalytics((currentValue) => !currentValue)
-            }
-            className="flex w-full flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between"
-            aria-expanded={showDetailedAnalytics}
-          >
-            <span className="flex items-start gap-4">
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
-                aria-hidden="true"
-              >
-                📊
-              </span>
-              <span>
-                <span className="block text-xl font-bold tracking-normal text-slate-950">
-                  الإحصائيات التفصيلية
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: '🟡',
+              label: 'مواعيد اليوم',
+              value: todayAppointmentsCount,
+              className: 'border-amber-200 bg-amber-50 text-amber-700',
+            },
+            {
+              icon: '🟢',
+              label: 'المواعيد المؤكدة',
+              value: confirmedAppointmentsCount,
+              className: 'border-green-200 bg-green-50 text-green-700',
+            },
+            {
+              icon: '🔵',
+              label: 'المواعيد المكتملة',
+              value: completedAppointmentsCount,
+              className: 'border-blue-200 bg-blue-50 text-blue-700',
+            },
+            {
+              icon: '🔴',
+              label: 'المواعيد الملغاة',
+              value: cancelledAppointmentsCount,
+              className: 'border-red-200 bg-red-50 text-red-700',
+            },
+          ].map((stat) => (
+            <article
+              key={stat.label}
+              className={`rounded-2xl border p-5 shadow-sm ${stat.className}`}
+            >
+              <p className="text-3xl font-black">
+                <span className="ml-2" aria-hidden="true">
+                  {stat.icon}
                 </span>
-                <span className="mt-2 block text-sm leading-7 text-slate-600">
-                  تابع أداء العيادة والمواعيد والتقييمات بشكل مفصل.
-                </span>
-              </span>
-            </span>
-
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700">
-              {showDetailedAnalytics ? '⌃' : '⌄'}
-            </span>
-          </button>
-
-          {showDetailedAnalytics ? (
-            <div className="mt-5 grid gap-5">
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowDetailedAnalytics(false)}
-                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                >
-                  إخفاء الإحصائيات التفصيلية
-                </button>
-              </div>
-
-              {analyticsErrorMessage ? (
-                <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold leading-7 text-rose-700">
-                  {analyticsErrorMessage}
-                </p>
-              ) : null}
-
-              {isLoadingAnalytics ? (
-                <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-                  جاري تحميل الإحصائيات التفصيلية...
-                </p>
-              ) : doctorAnalytics ? (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-600">
-                        مواعيد اليوم
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-slate-950">
-                        {doctorAnalytics.todayAppointments}
-                      </p>
-                    </article>
-
-                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-600">
-                        مواعيد هذا الأسبوع
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-teal-700">
-                        {doctorAnalytics.weekAppointments}
-                      </p>
-                    </article>
-
-                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-600">
-                        مواعيد هذا الشهر
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-slate-950">
-                        {doctorAnalytics.monthAppointments}
-                      </p>
-                    </article>
-
-                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-600">
-                        مرضى جدد هذا الشهر
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-emerald-700">
-                        {doctorAnalytics.newPatientsThisMonth}
-                      </p>
-                    </article>
-
-                    <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-slate-600">
-                        معدل الإلغاء
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-rose-700">
-                        {formatPercentage(doctorAnalytics.cancelledRate)}
-                      </p>
-                    </article>
-                  </div>
-
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <section className="rounded-lg border border-slate-200 p-4">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <h3 className="text-lg font-bold text-slate-950">
-                          المواعيد حسب الحالة
-                        </h3>
-                        <span className="text-sm font-semibold text-emerald-700">
-                          معدل الإكمال {formatPercentage(doctorAnalytics.completedRate)}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 grid gap-3">
-                        {(['scheduled', 'confirmed', 'completed', 'cancelled'] as const).map(
-                          (status) => (
-                            <div
-                              key={status}
-                              className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3"
-                            >
-                              <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset ${getStatusClass(
-                                  status,
-                                )}`}
-                              >
-                                {getStatusLabel(status)}
-                              </span>
-                              <span className="text-lg font-bold text-slate-950">
-                                {doctorAnalytics.byStatus[status]}
-                              </span>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </section>
-
-                    <section className="rounded-lg border border-slate-200 p-4">
-                      <h3 className="text-lg font-bold text-slate-950">
-                        توزيع التقييمات
-                      </h3>
-
-                      <div className="mt-4 grid gap-3">
-                        {([5, 4, 3, 2, 1] as const).map((rating) => {
-                          const count = doctorAnalytics.ratingDistribution[rating]
-                          const width = `${(count / maxRatingCount) * 100}%`
-
-                          return (
-                            <div key={rating} className="grid gap-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="font-bold text-amber-600">
-                                  {'★'.repeat(rating)}
-                                  <span className="text-slate-300">
-                                    {'★'.repeat(5 - rating)}
-                                  </span>
-                                </span>
-                                <span className="font-bold text-slate-700">
-                                  {count}
-                                </span>
-                              </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                  className="h-full rounded-full bg-amber-400"
-                                  style={{ width }}
-                                />
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </section>
-                  </div>
-
-                  <section className="rounded-lg border border-slate-200 p-4">
-                    <h3 className="text-lg font-bold text-slate-950">
-                      المواعيد الشهرية خلال آخر 6 أشهر
-                    </h3>
-
-                    <div className="mt-4 grid gap-3">
-                      {doctorAnalytics.monthlyAppointments.map((month) => {
-                        const monthDate = new Date(`${month.month}-01T00:00:00`)
-                        const width = `${(month.count / maxMonthlyAppointments) * 100}%`
-
-                        return (
-                          <div
-                            key={month.month}
-                            className="grid gap-2 sm:grid-cols-[8rem_1fr_3rem] sm:items-center"
-                          >
-                            <span className="text-sm font-bold text-slate-700">
-                              {monthFormatter.format(monthDate)}
-                            </span>
-                            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className="h-full rounded-full bg-teal-600"
-                                style={{ width }}
-                              />
-                            </div>
-                            <span className="text-sm font-bold text-slate-950">
-                              {month.count}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </section>
-                </>
-              ) : (
-                <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-                  لا توجد إحصائيات متاحة حالياً
-                </p>
-              )}
-            </div>
-          ) : null}
+                {isLoading ? '...' : stat.value}
+              </p>
+              <p className="mt-3 text-sm font-bold text-slate-700">{stat.label}</p>
+            </article>
+          ))}
         </section>
 
-        {doctor ? (
-          <section className="order-3 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <button
-              type="button"
-              onClick={() =>
-                setShowAvatarSettings((currentValue) => !currentValue)
-              }
-              className="flex w-full flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between"
-              aria-expanded={showAvatarSettings}
-            >
-              <span className="flex items-start gap-4">
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
-                  aria-hidden="true"
-                >
-                  🖼️
-                </span>
-                <span>
-                  <span className="block text-xl font-bold tracking-normal text-slate-950">
-                    الصورة الشخصية للطبيب
-                  </span>
-                  <span className="mt-2 block text-sm leading-7 text-slate-600">
-                    ارفع صورة شخصية تظهر للمرضى عند اختيار الطبيب.
-                  </span>
-                </span>
-              </span>
-
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700">
-                {showAvatarSettings ? '⌃' : '⌄'}
-              </span>
-            </button>
-
-            {showAvatarSettings ? (
-              <div className="mt-5 grid gap-4">
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowAvatarSettings(false)}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    إخفاء الصورة الشخصية
-                  </button>
-                </div>
-
-                <DoctorAvatarSection doctor={doctor} onDoctorChange={setDoctor} />
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        {doctor ? (
-          <section className="order-2 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <button
-              type="button"
-              onClick={() =>
-                setShowProfessionalProfile((currentValue) => !currentValue)
-              }
-              className="flex w-full flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between"
-              aria-expanded={showProfessionalProfile}
-            >
-              <span className="flex items-start gap-4">
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
-                  aria-hidden="true"
-                >
-                  👨‍⚕️
-                </span>
-                <span>
-                  <span className="block text-xl font-bold tracking-normal text-slate-950">
-                    الملف المهني
-                  </span>
-                  <span className="mt-2 block text-sm leading-7 text-slate-600">
-                    أضف معلوماتك المهنية ليراها المرضى عند اختيار الطبيب.
-                  </span>
-                </span>
-              </span>
-
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700">
-                {showProfessionalProfile ? '⌃' : '⌄'}
-              </span>
-            </button>
-
-            {showProfessionalProfile ? (
-              <div className="mt-5 grid gap-4">
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowProfessionalProfile(false)}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    إخفاء الملف المهني
-                  </button>
-                </div>
-
-                <DoctorProfessionalProfileSection
-                  doctor={doctor}
-                  onDoctorChange={setDoctor}
-                />
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        {doctor ? (
-          <section className="order-1 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <button
-              type="button"
-              onClick={() =>
-                setShowAvailabilitySettings((currentValue) => !currentValue)
-              }
-              className="flex w-full flex-col gap-4 text-right sm:flex-row sm:items-center sm:justify-between"
-              aria-expanded={showAvailabilitySettings}
-            >
-              <span className="flex items-start gap-4">
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xl"
-                  aria-hidden="true"
-                >
-                  🕒
-                </span>
-                <span>
-                  <span className="block text-xl font-bold tracking-normal text-slate-950">
-                    تحديد أوقات العمل
-                  </span>
-                  <span className="mt-2 block text-sm leading-7 text-slate-600">
-                    اضبط الأيام والساعات التي يمكن للمرضى حجز المواعيد فيها.
-                  </span>
-                </span>
-              </span>
-
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-700">
-                {showAvailabilitySettings ? '⌃' : '⌄'}
-              </span>
-            </button>
-
-            {showAvailabilitySettings ? (
-              <div className="mt-5 grid gap-4">
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowAvailabilitySettings(false)}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    إخفاء أوقات العمل
-                  </button>
-                </div>
-
-                <DoctorAvailabilitySection doctorId={doctor.id} />
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-            </div>
-          ) : null}
-        </section>
-
-        <section className="order-1 rounded-lg border border-teal-200 bg-teal-50/50 p-6 shadow-sm">
+        <section className="order-1 rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-7 shadow-sm">
           <button
             type="button"
             onClick={() => setShowAppointments((currentValue) => !currentValue)}
@@ -687,17 +344,21 @@ export default function DoctorDashboard() {
           >
             <span className="flex items-start gap-4">
               <span
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white text-2xl shadow-sm ring-1 ring-teal-100"
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm ring-1 ring-teal-100"
                 aria-hidden="true"
               >
                 📅
               </span>
               <span>
-                <span className="block text-2xl font-black tracking-normal text-slate-950">
+                <span className="block text-3xl font-black tracking-normal text-slate-950">
                   المواعيد
                 </span>
                 <span className="mt-2 block text-sm leading-7 text-slate-600">
                   راجع مواعيد المرضى وقم بتأكيدها أو إكمالها أو إلغائها.
+                </span>
+                <span className="mt-2 block text-sm font-bold leading-7 text-teal-800">
+                  لديك {todayAppointmentsCount} موعد اليوم، و{' '}
+                  {confirmedAppointmentsCount} موعدًا مؤكدًا.
                 </span>
               </span>
             </span>
@@ -723,7 +384,8 @@ export default function DoctorDashboard() {
           <div className="mb-5">
             <h2 className="text-xl font-bold tracking-normal text-slate-950">المواعيد</h2>
             <p className="mt-2 text-sm text-slate-600">
-              راجع المواعيد وقم بتأكيدها أو إكمالها أو إلغائها.
+              لديك {todayAppointmentsCount} موعد اليوم، و{' '}
+              {confirmedAppointmentsCount} موعدًا مؤكدًا.
             </p>
           </div>
 
@@ -765,7 +427,7 @@ export default function DoctorDashboard() {
                     <div className="lg:p-3">
                       <span className="block font-bold text-slate-500 lg:hidden">الحالة</span>
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset ${getStatusClass(
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${getStatusClass(
                           appointment.status,
                         )}`}
                       >

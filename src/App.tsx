@@ -9,6 +9,7 @@ import DoctorAvatarSettingsPage from './pages/doctor-settings/DoctorAvatarSettin
 import DoctorProfileSettingsPage from './pages/doctor-settings/DoctorProfileSettingsPage'
 import DoctorUnavailableDaysSettingsPage from './pages/doctor-settings/DoctorUnavailableDaysSettingsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import BookAppointment from './pages/patient/BookAppointment'
 import MyAppointments from './pages/patient/MyAppointments'
@@ -22,7 +23,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

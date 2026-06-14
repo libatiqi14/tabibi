@@ -40,8 +40,24 @@ export default function ForgotPasswordPage() {
   return (
     <main className="login-page" dir="rtl" lang="ar">
       <section className="login-card" aria-labelledby="forgot-password-title">
+        <div className="mb-5 flex justify-start">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-50"
+          >
+            <span>{'\u2190 \u0627\u0644\u0639\u0648\u062F\u0629 \u0644\u0644\u0631\u0626\u064A\u0633\u064A\u0629'}</span>
+          </Link>
+        </div>
         <div className="login-header">
-          <span className="login-badge">نظام المواعيد الطبية</span>
+          <div className="mb-6 flex flex-col items-center gap-2">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-emerald-500 text-3xl text-white shadow-lg">
+                  {'\uD83E\uDE7A'}
+                </span>
+                <span className="text-2xl font-black text-slate-900">Tabibi</span>
+                <span className="text-sm text-slate-500">
+                  {'\u0645\u0646\u0635\u0629 \u0627\u0644\u0645\u0648\u0627\u0639\u064A\u062F \u0627\u0644\u0637\u0628\u064A\u0629'}
+                </span>
+              </div>
           <h1 id="forgot-password-title">استعادة كلمة المرور</h1>
           <p>أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
         </div>

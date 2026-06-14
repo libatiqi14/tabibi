@@ -26,29 +26,6 @@ const roleOptions: Array<{
   },
 ]
 
-const heroFeatures = [
-  {
-    icon: '⚡',
-    title: 'حجز سريع',
-    description: 'احجز موعدك في دقائق معدودة',
-  },
-  {
-    icon: '🔔',
-    title: 'إشعارات فورية',
-    description: 'تذكيرات وتحديثات فورية',
-  },
-  {
-    icon: '🛡️',
-    title: 'أطباء موثوقون',
-    description: 'أطباء معتمدون وذوو خبرة',
-  },
-  {
-    icon: '📅',
-    title: 'متابعة المواعيد',
-    description: 'تابع مواعيدك وسجل زياراتك بسهولة',
-  },
-]
-
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -152,290 +129,246 @@ export default function RegisterPage() {
 
   return (
     <main
-      className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-teal-50 via-white to-emerald-50 text-slate-950"
+      className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-teal-50 via-white to-emerald-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8"
       dir="rtl"
       lang="ar"
     >
       <div className="pointer-events-none absolute -right-16 top-8 hidden h-56 w-56 rounded-full bg-teal-300/15 blur-3xl md:block lg:-right-24 lg:h-72 lg:w-72" />
       <div className="pointer-events-none absolute -bottom-20 -left-16 hidden h-60 w-60 rounded-full bg-emerald-300/15 blur-3xl md:block lg:-bottom-28 lg:-left-24 lg:h-80 lg:w-80" />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 md:gap-8 lg:grid lg:min-h-screen lg:grid-cols-2 lg:items-center lg:px-8">
-        <section className="order-1 flex items-center justify-center text-center lg:text-right">
-          <div className="w-full max-w-xl animate-[authFadeIn_600ms_ease-out_both]">
-            <div className="inline-flex items-center gap-3 rounded-full border border-teal-100 bg-white/80 px-4 py-2 text-sm font-black text-teal-800 shadow-sm backdrop-blur">
-              <span className="text-xl">🩺</span>
-              <span>Tabibi</span>
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-3xl items-center justify-center">
+        <section className="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+          <div className="mb-8 text-center">
+            <div className="mb-5 flex justify-start">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-2 text-sm font-semibold text-teal-700 shadow-sm transition hover:border-teal-300 hover:bg-teal-50"
+              >
+                <span>{'\u2190 \u0627\u0644\u0639\u0648\u062F\u0629 \u0644\u0644\u0631\u0626\u064A\u0633\u064A\u0629'}</span>
+              </Link>
             </div>
-
-            <p className="mt-4 text-sm font-black text-teal-700 lg:mt-5">منصة المواعيد الطبية</p>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-4xl lg:mt-4 lg:text-5xl">
-              احجز موعدك الطبي بسهولة
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-sm font-semibold leading-7 text-slate-600 sm:text-base sm:leading-8 lg:mx-0 lg:mt-5">
-              منصة ذكية تربط المرضى بالأطباء وتساعدك على إدارة مواعيدك الطبية في مكان واحد.
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-8 lg:gap-4">
-              {heroFeatures.map((feature) => (
-                <article
-                  key={feature.title}
-                  className="rounded-2xl border border-slate-100 bg-white/80 p-4 text-right shadow-md backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:shadow-lg sm:p-5"
-                >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-2xl ring-1 ring-teal-100">
-                    {feature.icon}
-                  </span>
-                  <h3 className="mt-4 text-base font-black text-slate-950">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-2 text-sm font-semibold leading-7 text-slate-600">
-                    {feature.description}
-                  </p>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-teal-100 bg-white/80 p-4 text-right shadow-md backdrop-blur sm:p-5 lg:mt-8">
-              <p className="text-sm font-bold leading-7 text-teal-900">
-                🔒 بياناتك محمية وآمنة داخل تجربة طبية حديثة مصممة للمرضى والأطباء.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="order-2 mt-6 flex items-center justify-center lg:mt-0">
-          <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white/95 p-5 shadow-2xl backdrop-blur sm:max-w-xl sm:p-8 lg:rounded-3xl">
-            <div className="mb-8 text-center">
-              <span className="inline-flex rounded-full bg-teal-50 px-4 py-2 text-sm font-black text-teal-700 ring-1 ring-teal-100">
-                نظام المواعيد الطبية
+            <div className="mb-6 flex flex-col items-center gap-2">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-emerald-500 text-3xl text-white shadow-lg">
+                {'\uD83E\uDE7A'}
               </span>
-              <h1 className="mt-5 text-3xl font-black tracking-normal text-slate-950">
-                إنشاء حساب جديد
-              </h1>
-              <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
-                اختر نوع الحساب وأدخل بياناتك للمتابعة.
-              </p>
+              <span className="text-2xl font-black text-slate-900">Tabibi</span>
+              <span className="text-sm text-slate-500">
+                {'\u0645\u0646\u0635\u0629 \u0627\u0644\u0645\u0648\u0627\u0639\u064A\u062F \u0627\u0644\u0637\u0628\u064A\u0629'}
+              </span>
+            </div>
+            <h1 className="mt-5 text-3xl font-black tracking-normal text-slate-950">
+              إنشاء حساب جديد
+            </h1>
+            <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
+              اختر نوع الحساب وأدخل بياناتك للمتابعة.
+            </p>
+          </div>
+
+          <form className="grid gap-5" onSubmit={handleRegister}>
+            <fieldset className="grid gap-3">
+              <legend className="text-sm font-bold text-slate-800">نوع الحساب</legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {roleOptions.map((option) => {
+                  const selected = role === option.value
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setRole(option.value)}
+                      className={`rounded-2xl border p-5 text-right shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+                        selected
+                          ? 'border-teal-600 bg-teal-50 ring-4 ring-teal-100'
+                          : 'border-slate-100 bg-white hover:border-teal-200'
+                      }`}
+                      aria-pressed={selected}
+                    >
+                      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-3xl ring-1 ring-teal-100">
+                        {option.icon}
+                      </span>
+                      <span className="mt-4 block text-lg font-black text-slate-950">
+                        {option.title}
+                      </span>
+                      <span className="mt-2 block text-sm font-semibold leading-7 text-slate-600">
+                        {option.description}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-800" htmlFor="fullName">
+                  الاسم الكامل
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+                    👤
+                  </span>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    placeholder="أدخل الاسم الكامل"
+                    autoComplete="name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-800" htmlFor="phone">
+                  رقم الهاتف
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+                    📞
+                  </span>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    placeholder="اختياري"
+                    autoComplete="tel"
+                  />
+                </div>
+              </div>
             </div>
 
-            <form className="grid gap-5" onSubmit={handleRegister}>
-              <fieldset className="grid gap-3">
-                <legend className="text-sm font-bold text-slate-800">نوع الحساب</legend>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {roleOptions.map((option) => {
-                    const selected = role === option.value
-
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setRole(option.value)}
-                        className={`rounded-2xl border p-5 text-right shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
-                          selected
-                            ? 'border-teal-600 bg-teal-50 ring-4 ring-teal-100'
-                            : 'border-slate-100 bg-white hover:border-teal-200'
-                        }`}
-                        aria-pressed={selected}
-                      >
-                        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-3xl ring-1 ring-teal-100">
-                          {option.icon}
-                        </span>
-                        <span className="mt-4 block text-lg font-black text-slate-950">
-                          {option.title}
-                        </span>
-                        <span className="mt-2 block text-sm font-semibold leading-7 text-slate-600">
-                          {option.description}
-                        </span>
-                      </button>
-                    )
-                  })}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-800" htmlFor="email">
+                  البريد الإلكتروني
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+                    ✉️
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    placeholder="name@example.com"
+                    autoComplete="email"
+                    required
+                  />
                 </div>
-              </fieldset>
+              </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <label className="text-sm font-bold text-slate-800" htmlFor="password">
+                  كلمة المرور
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+                    🔒
+                  </span>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                    placeholder="********"
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {role === 'doctor' ? (
+              <div className="grid gap-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 shadow-md sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <label className="text-sm font-bold text-slate-800" htmlFor="fullName">
-                    الاسم الكامل
+                  <label className="text-sm font-bold text-slate-800" htmlFor="specialty">
+                    التخصص
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                      👤
+                      👨‍⚕️
                     </span>
-                    <input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(event) => setFullName(event.target.value)}
+                    <select
+                      id="specialty"
+                      value={specialty}
+                      onChange={(event) => setSpecialty(event.target.value)}
                       className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                      placeholder="أدخل الاسم الكامل"
-                      autoComplete="name"
                       required
-                    />
+                    >
+                      <option value="">اختر التخصص</option>
+                      {MEDICAL_SPECIALTIES.map((specialtyOption) => {
+                        const meta = getSpecialtyMeta(specialtyOption)
+
+                        return (
+                          <option key={specialtyOption} value={specialtyOption}>
+                            {meta.icon} {meta.labelAr}
+                          </option>
+                        )
+                      })}
+                    </select>
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  <label className="text-sm font-bold text-slate-800" htmlFor="phone">
-                    رقم الهاتف
+                  <label className="text-sm font-bold text-slate-800" htmlFor="clinicName">
+                    اسم العيادة
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                      📞
+                      🏥
                     </span>
                     <input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
+                      id="clinicName"
+                      type="text"
+                      value={clinicName}
+                      onChange={(event) => setClinicName(event.target.value)}
                       className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                       placeholder="اختياري"
-                      autoComplete="tel"
                     />
                   </div>
                 </div>
               </div>
+            ) : null}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <label className="text-sm font-bold text-slate-800" htmlFor="email">
-                    البريد الإلكتروني
-                  </label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                      ✉️
-                    </span>
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <label className="text-sm font-bold text-slate-800" htmlFor="password">
-                    كلمة المرور
-                  </label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                      🔒
-                    </span>
-                    <input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                      placeholder="********"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {role === 'doctor' ? (
-                <div className="grid gap-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 shadow-md sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-bold text-slate-800" htmlFor="specialty">
-                      التخصص
-                    </label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                        👨‍⚕️
-                      </span>
-                      <select
-                        id="specialty"
-                        value={specialty}
-                        onChange={(event) => setSpecialty(event.target.value)}
-                        className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                        required
-                      >
-                        <option value="">اختر التخصص</option>
-                        {MEDICAL_SPECIALTIES.map((specialtyOption) => {
-                          const meta = getSpecialtyMeta(specialtyOption)
-
-                          return (
-                            <option key={specialtyOption} value={specialtyOption}>
-                              {meta.icon} {meta.labelAr}
-                            </option>
-                          )
-                        })}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-sm font-bold text-slate-800" htmlFor="clinicName">
-                      اسم العيادة
-                    </label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
-                        🏥
-                      </span>
-                      <input
-                        id="clinicName"
-                        type="text"
-                        value={clinicName}
-                        onChange={(event) => setClinicName(event.target.value)}
-                        className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                        placeholder="اختياري"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {successMessage ? (
-                <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-7 text-emerald-700">
-                  {successMessage}
-                </p>
-              ) : null}
-
-              {errorMessage ? (
-                <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold leading-7 text-rose-700">
-                  {errorMessage}
-                </p>
-              ) : null}
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex h-14 w-full items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-black text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
-              </button>
-
-              <p className="text-center text-sm text-slate-600">
-                لديك حساب بالفعل؟{' '}
-                <Link
-                  className="font-black text-teal-700 transition hover:text-teal-800 hover:underline"
-                  to="/login"
-                >
-                  تسجيل الدخول
-                </Link>
+            {successMessage ? (
+              <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-7 text-emerald-700">
+                {successMessage}
               </p>
-            </form>
-          </div>
+            ) : null}
+
+            {errorMessage ? (
+              <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold leading-7 text-rose-700">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex h-14 w-full items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-black text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+            </button>
+
+            <p className="text-center text-sm text-slate-600">
+              لديك حساب بالفعل؟{' '}
+              <Link
+                className="font-black text-teal-700 transition hover:text-teal-800 hover:underline"
+                to="/login"
+              >
+                تسجيل الدخول
+              </Link>
+            </p>
+          </form>
         </section>
       </div>
-
-      <style>{`
-        @keyframes authFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </main>
   )
 }

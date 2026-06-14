@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import type { UserRole } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createDoctorProfile } from '../services/doctor'
+import { MOROCCAN_CITIES } from '../utils/cities'
 import { getSpecialtyMeta, MEDICAL_SPECIALTIES } from '../utils/specialties'
 
 const roleOptions: Array<{
@@ -33,6 +34,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole | ''>('')
   const [specialty, setSpecialty] = useState('')
+  const [city, setCity] = useState('')
   const [clinicName, setClinicName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -45,6 +47,7 @@ export default function RegisterPage() {
     setPassword('')
     setRole('')
     setSpecialty('')
+    setCity('')
     setClinicName('')
   }
 
@@ -59,7 +62,12 @@ export default function RegisterPage() {
     }
 
     if (role === 'doctor' && !specialty.trim()) {
-      setErrorMessage('يرجى اختيار تخصص الطبيب.')
+      setErrorMessage('\u064A\u0631\u062C\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u062A\u062E\u0635\u0635 \u0627\u0644\u0637\u0628\u064A\u0628.')
+      return
+    }
+
+    if (role === 'doctor' && !city.trim()) {
+      setErrorMessage('\u064A\u0631\u062C\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629.')
       return
     }
 
@@ -75,6 +83,7 @@ export default function RegisterPage() {
             phone: phone.trim() || null,
             role,
             specialty: role === 'doctor' ? specialty.trim() : null,
+            city: role === 'doctor' ? city.trim() : null,
             clinic_name: role === 'doctor' ? clinicName.trim() || null : null,
           },
         },
@@ -100,6 +109,7 @@ export default function RegisterPage() {
         user_id: data.user.id,
         full_name: fullName,
         specialty: role === 'doctor' ? specialty.trim() : null,
+        city: role === 'doctor' ? city.trim() : null,
         clinic_name: role === 'doctor' ? clinicName.trim() || null : null,
       })
 
@@ -108,6 +118,7 @@ export default function RegisterPage() {
           userId: data.user.id,
           fullName,
           specialty: specialty.trim(),
+          city: city.trim(),
           clinicName: clinicName.trim() || null,
           phone: phone.trim() || null,
           email: data.user.email ?? email,
@@ -312,6 +323,33 @@ export default function RegisterPage() {
                           </option>
                         )
                       })}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm font-bold text-slate-800" htmlFor="city">
+                    {'\u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg">
+                      {'\uD83D\uDCCD'}
+                    </span>
+                    <select
+                      id="city"
+                      value={city}
+                      onChange={(event) => setCity(event.target.value)}
+                      className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                      required
+                    >
+                      <option value="">
+                        {'\u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+                      </option>
+                      {MOROCCAN_CITIES.map((cityOption) => (
+                        <option key={cityOption} value={cityOption}>
+                          {cityOption}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

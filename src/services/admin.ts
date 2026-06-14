@@ -15,6 +15,8 @@ export interface AdminDoctor {
   full_name: string
   specialty: string
   clinic_name: string | null
+  city: string | null
+  address: string | null
   phone: string | null
   email: string | null
   avatar_url: string | null
@@ -92,6 +94,8 @@ type DoctorRow = {
   full_name: string
   specialty: string
   clinic_name: string | null
+  city: string | null
+  address: string | null
   phone: string | null
   email: string | null
   avatar_url: string | null
@@ -182,7 +186,7 @@ async function loadAdminBaseData() {
     supabase
       .from('doctors')
       .select(
-        'id, user_id, full_name, specialty, clinic_name, phone, email, avatar_url, years_experience, medical_school, graduation_year, biography, languages, previous_hospitals, active, created_at',
+        'id, user_id, full_name, specialty, clinic_name, city, address, phone, email, avatar_url, years_experience, medical_school, graduation_year, biography, languages, previous_hospitals, active, created_at',
       )
       .order('created_at', { ascending: false }),
     supabase
@@ -357,7 +361,7 @@ export async function toggleDoctorStatus(
     .update({ active })
     .eq('id', doctorId)
     .select(
-      'id, user_id, full_name, specialty, clinic_name, phone, email, avatar_url, years_experience, medical_school, graduation_year, biography, languages, previous_hospitals, active, created_at',
+      'id, user_id, full_name, specialty, clinic_name, city, address, phone, email, avatar_url, years_experience, medical_school, graduation_year, biography, languages, previous_hospitals, active, created_at',
     )
     .single()
 

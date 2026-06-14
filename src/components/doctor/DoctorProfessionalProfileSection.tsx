@@ -3,6 +3,7 @@ import {
   updateDoctorProfessionalProfile,
   type DoctorProfile,
 } from '../../services/doctor'
+import { MOROCCAN_CITIES } from '../../utils/cities'
 
 type DoctorProfessionalProfileSectionProps = {
   doctor: DoctorProfile
@@ -11,6 +12,8 @@ type DoctorProfessionalProfileSectionProps = {
 
 type ProfessionalProfileForm = {
   yearsExperience: string
+  city: string
+  address: string
   medicalSchool: string
   graduationYear: string
   biography: string
@@ -34,6 +37,8 @@ function textToArray(value: string) {
 function buildForm(doctor: DoctorProfile): ProfessionalProfileForm {
   return {
     yearsExperience: doctor.years_experience?.toString() ?? '',
+    city: doctor.city ?? '',
+    address: doctor.address ?? '',
     medicalSchool: doctor.medical_school ?? '',
     graduationYear: doctor.graduation_year?.toString() ?? '',
     biography: doctor.biography ?? '',
@@ -99,6 +104,8 @@ export default function DoctorProfessionalProfileSection({
     try {
       const updatedDoctor = await updateDoctorProfessionalProfile(doctor.id, {
         years_experience: yearsExperience,
+        city: form.city.trim() || null,
+        address: form.address.trim() || null,
         medical_school: form.medicalSchool.trim() || null,
         graduation_year: graduationYear,
         biography: form.biography.trim() || null,
@@ -154,6 +161,41 @@ export default function DoctorProfessionalProfileSection({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-2">
+          <label className="text-sm font-bold text-slate-800" htmlFor="city">
+            {'\u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+          </label>
+          <select
+            id="city"
+            value={form.city}
+            onChange={(event) => updateForm('city', event.target.value)}
+            className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+          >
+            <option value="">
+              {'\u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+            </option>
+            {MOROCCAN_CITIES.map((cityOption) => (
+              <option key={cityOption} value={cityOption}>
+                {cityOption}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-2">
+          <label className="text-sm font-bold text-slate-800" htmlFor="address">
+            {'\u0627\u0644\u0639\u0646\u0648\u0627\u0646'}
+          </label>
+          <input
+            id="address"
+            type="text"
+            value={form.address}
+            onChange={(event) => updateForm('address', event.target.value)}
+            className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+            placeholder={'\u0645\u062B\u0627\u0644: \u0634\u0627\u0631\u0639 \u0645\u062D\u0645\u062F \u0627\u0644\u062E\u0627\u0645\u0633\u060C \u062D\u064A \u0623\u0643\u062F\u0627\u0644'}
+          />
+        </div>
+
         <div className="grid gap-2">
           <label className="text-sm font-bold text-slate-800" htmlFor="yearsExperience">
             سنوات الخبرة

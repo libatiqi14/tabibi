@@ -12,6 +12,8 @@ export type CreateDoctorProfileData = {
   userId: string
   fullName: string
   specialty: string
+  city?: string | null
+  address?: string | null
   clinicName?: string | null
   phone?: string | null
   email?: string | null
@@ -19,6 +21,8 @@ export type CreateDoctorProfileData = {
 
 export type UpdateDoctorProfessionalProfileData = {
   years_experience: number | null
+  city: string | null
+  address: string | null
   medical_school: string | null
   graduation_year: number | null
   biography: string | null
@@ -58,6 +62,8 @@ export async function createDoctorProfile({
   userId,
   fullName,
   specialty,
+  city,
+  address,
   clinicName,
   phone,
   email,
@@ -66,6 +72,8 @@ export async function createDoctorProfile({
     user_id: userId,
     full_name: fullName,
     specialty,
+    city: city ?? null,
+    address: address ?? null,
     clinic_name: clinicName ?? null,
     phone: phone ?? null,
     email: email ?? null,

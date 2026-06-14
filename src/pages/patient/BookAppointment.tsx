@@ -6,7 +6,7 @@ import {
   getDoctorDaySlots,
   type DoctorDaySlot,
 } from '../../services/availability'
-import { getDoctorsBySpecialty, type Doctor } from '../../services/doctors'
+import { getDoctorsByCityAndSpecialty, type Doctor } from '../../services/doctors'
 import {
   getDoctorReviews,
   getDoctorReviewStats,
@@ -14,6 +14,7 @@ import {
   type DoctorReviewStats,
 } from '../../services/reviews'
 import { MEDICAL_SPECIALTIES, getSpecialtyMeta } from '../../utils/specialties'
+import { MOROCCAN_CITIES } from '../../utils/cities'
 
 const WORKING_DAY_START_MINUTES = 9 * 60
 const WORKING_DAY_END_MINUTES = 18 * 60
@@ -103,6 +104,7 @@ export default function BookAppointment() {
     Record<string, DoctorReview[]>
   >({})
   const [daySlots, setDaySlots] = useState<DoctorDaySlot[]>([])
+  const [city, setCity] = useState('')
   const [specialty, setSpecialty] = useState('')
   const [doctorId, setDoctorId] = useState('')
   const [appointmentDay, setAppointmentDay] = useState('')
@@ -126,7 +128,7 @@ export default function BookAppointment() {
     let isMounted = true
 
     const loadDoctors = async () => {
-      if (!specialty) {
+      if (!city || !specialty) {
         setDoctors([])
         setReviewStatsByDoctorId({})
         setReviewsByDoctorId({})
@@ -145,7 +147,7 @@ export default function BookAppointment() {
       setErrorMessage('')
 
       try {
-        const data = await getDoctorsBySpecialty(specialty)
+        const data = await getDoctorsByCityAndSpecialty(city, specialty)
         const reviewEntries = await Promise.all(
           data.map(async (doctor) => {
             const [stats, reviews] = await Promise.all([
@@ -191,7 +193,7 @@ export default function BookAppointment() {
     return () => {
       isMounted = false
     }
-  }, [specialty])
+  }, [city, specialty])
 
   useEffect(() => {
     let isMounted = true
@@ -246,6 +248,7 @@ export default function BookAppointment() {
   }, [doctorId, appointmentDay])
 
   const resetForm = () => {
+    setCity('')
     setSpecialty('')
     setDoctorId('')
     setDoctors([])
@@ -270,7 +273,7 @@ export default function BookAppointment() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    if (!specialty || !selectedDoctor || !appointmentDay || !selectedSlot) {
+    if (!city || !specialty || !selectedDoctor || !appointmentDay || !selectedSlot) {
       setErrorMessage('يرجى تعبئة جميع الحقول المطلوبة.')
       return
     }
@@ -303,7 +306,8 @@ export default function BookAppointment() {
     }
   }
 
-  const doctorSelectDisabled = !specialty || isLoadingDoctors || doctors.length === 0
+  const doctorSelectDisabled =
+    !city || !specialty || isLoadingDoctors || doctors.length === 0
 
   return (
     <main
@@ -337,6 +341,35 @@ export default function BookAppointment() {
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <form className="grid gap-5" onSubmit={handleSubmit}>
             <div className="grid gap-2">
+              <label className="text-sm font-bold text-slate-800" htmlFor="city">
+                {'\u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+              </label>
+              <select
+                id="city"
+                value={city}
+                onChange={(event) => {
+                  setCity(event.target.value)
+                  setSpecialty('')
+                  setDoctorId('')
+                  setDoctors([])
+                  setDaySlots([])
+                  setSelectedSlot('')
+                }}
+                className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+                required
+              >
+                <option value="">
+                  {'\u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629'}
+                </option>
+                {MOROCCAN_CITIES.map((cityOption) => (
+                  <option key={cityOption} value={cityOption}>
+                    {cityOption}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-2">
               <label className="text-sm font-bold text-slate-800" htmlFor="specialty">
                 التخصص
               </label>
@@ -344,10 +377,15 @@ export default function BookAppointment() {
                 id="specialty"
                 value={specialty}
                 onChange={(event) => setSpecialty(event.target.value)}
+                disabled={!city}
                 className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                 required
               >
-                <option value="">اختر التخصص</option>
+                <option value="">
+                  {city
+                    ? '\u0627\u062E\u062A\u0631 \u0627\u0644\u062A\u062E\u0635\u0635'
+                    : '\u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629 \u0623\u0648\u0644\u0627\u064B'}
+                </option>
                 {MEDICAL_SPECIALTIES.map((item) => {
                   const meta = getSpecialtyMeta(item)
 
@@ -360,9 +398,9 @@ export default function BookAppointment() {
               </select>
             </div>
 
-            {specialty && !isLoadingDoctors && doctors.length === 0 ? (
+            {city && specialty && !isLoadingDoctors && doctors.length === 0 ? (
               <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
-                لا يوجد أطباء في هذا التخصص حالياً
+                {'\u0644\u0627 \u064A\u0648\u062C\u062F \u0623\u0637\u0628\u0627\u0621 \u0641\u064A \u0647\u0630\u0627 \u0627\u0644\u062A\u062E\u0635\u0635 \u062F\u0627\u062E\u0644 \u0647\u0630\u0647 \u0627\u0644\u0645\u062F\u064A\u0646\u0629 \u062D\u0627\u0644\u064A\u0627\u064B'}
               </p>
             ) : null}
 
@@ -379,13 +417,15 @@ export default function BookAppointment() {
                 required
               >
                 <option value="">
-                  {!specialty
-                    ? 'اختر التخصص أولا'
+                  {!city
+                    ? '\u0627\u062E\u062A\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629 \u0623\u0648\u0644\u0627'
+                    : !specialty
+                      ? '\u0627\u062E\u062A\u0631 \u0627\u0644\u062A\u062E\u0635\u0635 \u0623\u0648\u0644\u0627'
                     : isLoadingDoctors
                       ? 'جاري تحميل الأطباء...'
                       : doctors.length === 0
-                        ? 'لا يوجد أطباء في هذا التخصص حالياً'
-                        : 'اختر الطبيب'}
+                        ? '\u0644\u0627 \u064A\u0648\u062C\u062F \u0623\u0637\u0628\u0627\u0621 \u0641\u064A \u0647\u0630\u0627 \u0627\u0644\u062A\u062E\u0635\u0635 \u062F\u0627\u062E\u0644 \u0647\u0630\u0647 \u0627\u0644\u0645\u062F\u064A\u0646\u0629 \u062D\u0627\u0644\u064A\u0627\u064B'
+                        : '\u0627\u062E\u062A\u0631 \u0627\u0644\u0637\u0628\u064A\u0628'}
                 </option>
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
@@ -419,6 +459,18 @@ export default function BookAppointment() {
                     <p className="mt-1 text-sm font-semibold text-teal-800">
                       {selectedDoctor.specialty}
                     </p>
+                    {selectedDoctor.city ? (
+                      <p className="mt-2 text-sm font-semibold text-slate-600">
+                        {'\uD83D\uDCCD '}
+                        {selectedDoctor.city}
+                      </p>
+                    ) : null}
+                    {selectedDoctor.address ? (
+                      <p className="mt-2 text-sm font-semibold text-slate-600">
+                        {'\uD83C\uDFE5 '}
+                        {selectedDoctor.address}
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-sm font-bold text-amber-600">
                       {selectedDoctorReviewStats?.reviewCount
                         ? `⭐ ${selectedDoctorReviewStats.averageRating?.toFixed(1)} (${selectedDoctorReviewStats.reviewCount} تقييم)`

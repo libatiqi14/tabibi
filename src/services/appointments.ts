@@ -10,6 +10,11 @@ export interface Appointment {
   status: string
   notes?: string | null
   created_at: string
+  patient?: {
+    full_name?: string | null
+    email?: string | null
+    phone?: string | null
+  } | null
 }
 
 export type CreateAppointmentData = {

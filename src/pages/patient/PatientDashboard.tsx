@@ -26,11 +26,11 @@ import {
 } from '../../services/reviews'
 import { MEDICAL_SPECIALTIES, getSpecialtyMeta } from '../../utils/specialties'
 import { MOROCCAN_CITIES } from '../../utils/cities'
-
-const appointmentDateFormatter = new Intl.DateTimeFormat('ar-MA', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
+import {
+  buildAppointmentDateTime,
+  formatAppointmentDateInput,
+  formatAppointmentDateTime,
+} from '../../utils/dateTime'
 
 const reviewDateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
@@ -41,7 +41,7 @@ const WORKING_DAY_END_MINUTES = 18 * 60
 const SLOT_INTERVAL_MINUTES = 10
 
 function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10)
+  return formatAppointmentDateInput()
 }
 
 function toSqlDate(date: string) {
@@ -519,7 +519,7 @@ export default function PatientDashboard() {
         doctor_id: doctor.id,
         doctor_name: doctor.full_name,
         specialty: doctor.specialty,
-        appointment_date: `${sqlDate}T${selectedTime}:00`,
+        appointment_date: buildAppointmentDateTime(sqlDate, selectedTime),
         notes: bookingNotes.trim() || null,
       })
 
@@ -1905,9 +1905,7 @@ export default function PatientDashboard() {
                             تاريخ الموعد
                           </span>
                           <span className="text-slate-700">
-                            {appointmentDateFormatter.format(
-                              new Date(appointment.appointment_date),
-                            )}
+                            {formatAppointmentDateTime(appointment.appointment_date)}
                           </span>
                         </div>
                         <div className="md:p-3">

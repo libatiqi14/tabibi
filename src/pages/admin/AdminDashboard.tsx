@@ -17,6 +17,7 @@ import {
   type AdminReview,
   type AdminStats,
 } from '../../services/admin'
+import { formatAppointmentDateTime } from '../../utils/dateTime'
 
 const dateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
@@ -616,7 +617,7 @@ export default function AdminDashboard() {
                     {appointment.doctor_name}
                   </div>
                   <div className="text-slate-700 md:p-3">
-                    {dateFormatter.format(new Date(appointment.appointment_date))}
+                    {formatAppointmentDateTime(appointment.appointment_date)}
                   </div>
                   <div className="md:p-3">
                     <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700">

@@ -15,13 +15,17 @@ import {
 } from '../../services/reviews'
 import { MEDICAL_SPECIALTIES, getSpecialtyMeta } from '../../utils/specialties'
 import { MOROCCAN_CITIES } from '../../utils/cities'
+import {
+  buildAppointmentDateTime,
+  formatAppointmentDateInput,
+} from '../../utils/dateTime'
 
 const WORKING_DAY_START_MINUTES = 9 * 60
 const WORKING_DAY_END_MINUTES = 18 * 60
 const SLOT_INTERVAL_MINUTES = 10
 
 function getTodayInputValue() {
-  return new Date().toISOString().slice(0, 10)
+  return formatAppointmentDateInput()
 }
 
 function toSqlDate(date: string) {
@@ -288,7 +292,7 @@ export default function BookAppointment() {
         doctor_id: selectedDoctor.id,
         doctor_name: selectedDoctor.full_name,
         specialty,
-        appointment_date: `${sqlDate}T${selectedTime}:00`,
+        appointment_date: buildAppointmentDateTime(sqlDate, selectedTime),
         notes: notes.trim() || null,
       })
 

@@ -39,6 +39,13 @@ const allowedStatuses: AppointmentStatus[] = [
   'cancelled',
 ]
 
+type PatientProfile = {
+  id: string
+  full_name?: string | null
+  email?: string | null
+  phone?: string | null
+}
+
 async function getCurrentUserId() {
   const {
     data: { user },
@@ -234,7 +241,51 @@ export async function getDoctorAppointments(): Promise<Appointment[]> {
     throw new Error(error.message)
   }
 
-  return (data ?? []) as Appointment[]
+  return attachPatientProfiles((data ?? []) as Appointment[])
+}
+
+async function attachPatientProfiles(
+  appointments: Appointment[],
+): Promise<Appointment[]> {
+  const patientIds = Array.from(
+    new Set(
+      appointments
+        .map((appointment) => appointment.patient_id)
+        .filter(Boolean),
+    ),
+  )
+
+  if (patientIds.length === 0) {
+    return appointments
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, phone')
+    .in('id', patientIds)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const profilesById = new Map(
+    ((data ?? []) as PatientProfile[]).map((profile) => [profile.id, profile]),
+  )
+
+  return appointments.map((appointment) => {
+    const profile = profilesById.get(appointment.patient_id)
+
+    return {
+      ...appointment,
+      patient: profile
+        ? {
+            full_name: profile.full_name ?? null,
+            email: profile.email ?? null,
+            phone: profile.phone ?? null,
+          }
+        : null,
+    }
+  })
 }
 
 export async function updateAppointmentStatus(
@@ -266,5 +317,7 @@ export async function updateAppointmentStatus(
     throw new Error(error.message)
   }
 
-  return data as Appointment
+  const [appointmentWithPatient] = await attachPatientProfiles([data as Appointment])
+
+  return appointmentWithPatient
 }

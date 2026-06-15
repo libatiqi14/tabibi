@@ -58,21 +58,23 @@ function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000)
 }
 
-function formatDateTime(isoDate: string) {
-  const date = new Date(isoDate)
+function formatLocalDate(value: string) {
+  const [datePart] = value.split('T').length > 1
+    ? value.split('T')
+    : value.split(' ')
 
-  return {
-    date: new Intl.DateTimeFormat('ar', {
-      dateStyle: 'full',
-      timeZone: 'UTC',
-    }).format(date),
-    time: new Intl.DateTimeFormat('ar', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'UTC',
-    }).format(date),
-  }
+  return datePart
+}
+
+function formatLocalTime(value: string) {
+  const normalized = value.replace('T', ' ')
+  const timePart = normalized.split(' ')[1] ?? ''
+
+  return timePart.slice(0, 5)
+}
+
+function formatLocalDateTime(value: string) {
+  return `${formatLocalDate(value)} ${formatLocalTime(value)}`
 }
 
 function getReminderWindow(type: ReminderType, now = new Date()) {
@@ -90,7 +92,7 @@ function getReminderWindow(type: ReminderType, now = new Date()) {
 }
 
 function getNotificationMessage(appointment: AppointmentRow, reminderType: ReminderType) {
-  const { time } = formatDateTime(appointment.appointment_date)
+  const time = formatLocalTime(appointment.appointment_date)
 
   if (reminderType === '24h') {
     return `لديك موعد طبي غداً مع د. ${appointment.doctor_name} على الساعة ${time}.`
@@ -100,7 +102,8 @@ function getNotificationMessage(appointment: AppointmentRow, reminderType: Remin
 }
 
 function getEmailBody(appointment: AppointmentRow, reminderType: ReminderType) {
-  const { date, time } = formatDateTime(appointment.appointment_date)
+  const date = formatLocalDate(appointment.appointment_date)
+  const time = formatLocalTime(appointment.appointment_date)
   const leadText =
     reminderType === '24h'
       ? 'هذا تذكير بموعدك الطبي غداً.'

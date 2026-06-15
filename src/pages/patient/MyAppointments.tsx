@@ -10,11 +10,11 @@ import {
   createDoctorReview,
   getPatientReviewForAppointment,
 } from '../../services/reviews'
-
-const appointmentDateFormatter = new Intl.DateTimeFormat('ar-MA', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
+import {
+  buildAppointmentDateTime,
+  formatAppointmentDateTime,
+  formatAppointmentDateTimeLocalInput,
+} from '../../utils/dateTime'
 
 const statusLabels: Record<string, string> = {
   scheduled: 'مجدول',
@@ -37,11 +37,7 @@ function getStatusClass(status: string) {
 }
 
 function toDateTimeLocalValue(date: string) {
-  const value = new Date(date)
-  const offset = value.getTimezoneOffset()
-  const localDate = new Date(value.getTime() - offset * 60_000)
-
-  return localDate.toISOString().slice(0, 16)
+  return formatAppointmentDateTimeLocalInput(date)
 }
 
 export default function MyAppointments() {
@@ -190,7 +186,10 @@ export default function MyAppointments() {
     try {
       const updatedAppointment = await rescheduleAppointment(
         reschedulingAppointment.id,
-        selectedDate.toISOString(),
+        buildAppointmentDateTime(
+          newAppointmentDate.slice(0, 10),
+          newAppointmentDate.slice(11, 16),
+        ),
       )
 
       setAppointments((currentAppointments) =>
@@ -326,9 +325,7 @@ export default function MyAppointments() {
                       <div>
                         <p className="text-xs font-bold text-slate-500">تاريخ الموعد</p>
                         <p className="mt-1 text-sm text-slate-700">
-                          {appointmentDateFormatter.format(
-                            new Date(appointment.appointment_date),
-                          )}
+                          {formatAppointmentDateTime(appointment.appointment_date)}
                         </p>
                       </div>
 

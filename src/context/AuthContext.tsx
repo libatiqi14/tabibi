@@ -9,6 +9,7 @@ export type UserRole = 'admin' | 'doctor' | 'patient'
 export interface UserProfile {
   id: string
   email: string
+  full_name: string | null
   role: UserRole
 }
 
@@ -45,6 +46,7 @@ async function fetchUserProfile(user: User): Promise<UserProfile> {
   return {
     id: user.id,
     email: profile.email ?? user.email ?? '',
+    full_name: profile.full_name,
     role: profile.role,
   }
 }

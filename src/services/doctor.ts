@@ -9,7 +9,7 @@ export interface DoctorProfile extends Doctor {
 }
 
 export type CreateDoctorProfileData = {
-  userId: string
+  user_id: string
   fullName: string
   specialty: string
   city?: string | null
@@ -66,7 +66,7 @@ async function getCurrentUserId() {
 }
 
 export async function createDoctorProfile({
-  userId,
+  user_id,
   fullName,
   specialty,
   city,
@@ -76,7 +76,7 @@ export async function createDoctorProfile({
   email,
 }: CreateDoctorProfileData): Promise<DoctorProfile> {
   const payload = {
-    user_id: userId,
+    user_id,
     full_name: fullName,
     specialty,
     city: city ?? null,
@@ -102,7 +102,7 @@ export async function createDoctorProfile({
     const { data: existingDoctor, error: existingError } = await supabase
       .from('doctors')
       .select(doctorProfileSelect)
-      .eq('user_id', userId)
+      .eq('user_id', user_id)
       .single()
 
     console.log('DOCTOR FETCH AFTER DUPLICATE', existingDoctor)
@@ -112,11 +112,19 @@ export async function createDoctorProfile({
       throw new Error(existingError.message)
     }
 
+    if (existingDoctor.user_id !== user_id) {
+      throw new Error('Doctor profile was found but is not linked to the signed up user.')
+    }
+
     return existingDoctor as DoctorProfile
   }
 
   if (error) {
     throw new Error(error.message)
+  }
+
+  if (!data || data.user_id !== user_id) {
+    throw new Error('Doctor profile was created without a valid user_id link.')
   }
 
   return data as DoctorProfile

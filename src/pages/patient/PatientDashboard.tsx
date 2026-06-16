@@ -29,16 +29,13 @@ import { MOROCCAN_CITIES } from '../../utils/cities'
 import {
   buildAppointmentDateTime,
   formatAppointmentDateInput,
-  formatAppointmentDateTime,
+  formatLocalAppointmentDate,
+  formatLocalAppointmentTime,
 } from '../../utils/dateTime'
 
 const reviewDateFormatter = new Intl.DateTimeFormat('ar-MA', {
   dateStyle: 'medium',
 })
-
-const WORKING_DAY_START_MINUTES = 9 * 60
-const WORKING_DAY_END_MINUTES = 18 * 60
-const SLOT_INTERVAL_MINUTES = 10
 
 function getTodayInputValue() {
   return formatAppointmentDateInput()
@@ -57,24 +54,6 @@ function toSqlDate(date: string) {
   }
 
   return date
-}
-
-function getSlotMinutes(slotStart: string) {
-  const [hours = '0', minutes = '0'] = slotStart.slice(0, 5).split(':')
-
-  return Number(hours) * 60 + Number(minutes)
-}
-
-function isAllowedSlot(slot: DoctorDaySlot) {
-  const slotTime = slot.slot_start.slice(0, 5)
-  const minutes = getSlotMinutes(slotTime)
-
-  return (
-    /^\d{2}:\d{2}$/.test(slotTime) &&
-    minutes >= WORKING_DAY_START_MINUTES &&
-    minutes < WORKING_DAY_END_MINUTES &&
-    minutes % SLOT_INTERVAL_MINUTES === 0
-  )
 }
 
 function getSlotTime(slotStart: string) {
@@ -139,7 +118,7 @@ function getBookingErrorMessage(error: unknown) {
 
 export default function PatientDashboard() {
   const navigate = useNavigate()
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, profile, loading: authLoading, signOut } = useAuth()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isFetchingAppointments, setIsFetchingAppointments] = useState(true)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
@@ -170,6 +149,8 @@ export default function PatientDashboard() {
   const [loadingReviews, setLoadingReviews] = useState(false)
   const [reviewsError, setReviewsError] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const selectedBookingSlot = daySlots.find((slot) => slot.slot_start === bookingTime)
 
   useEffect(() => {
     let isMounted = true
@@ -328,7 +309,7 @@ export default function PatientDashboard() {
         const slots = await getDoctorDaySlots(activeBookingDoctorId, sqlDate)
 
         if (isMounted) {
-          setDaySlots(slots.filter(isAllowedSlot))
+          setDaySlots(slots)
         }
       } catch (error) {
         if (isMounted) {
@@ -425,9 +406,11 @@ export default function PatientDashboard() {
       )
   }, [appointments])
 
-  const patientDisplayName = user?.email ?? 'مريض'
+  const emailUsername = user?.email?.split('@')[0] ?? ''
+  const patientDisplayName = profile?.full_name?.trim() || emailUsername || 'مريض'
 
   const handleSignOut = async () => {
+    setShowProfileMenu(false)
     await signOut()
   }
 
@@ -510,6 +493,11 @@ export default function PatientDashboard() {
       return
     }
 
+    if (!selectedBookingSlot || selectedBookingSlot.status !== 'available') {
+      setBookingError('يرجى اختيار وقت متاح.')
+      return
+    }
+
     setSubmittingBooking(true)
 
     try {
@@ -559,37 +547,45 @@ export default function PatientDashboard() {
           جاري تحميل الأوقات...
         </p>
       ) : daySlots.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-          {daySlots.map((slot) => {
-            const isSelected = bookingTime === slot.slot_start
-            const isBooked = slot.status === 'booked'
+        <div className="grid gap-3">
+          {daySlots.every((slot) => slot.status === 'booked') ? (
+            <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+              جميع الأوقات محجوزة في هذا اليوم
+            </p>
+          ) : null}
 
-            return (
-              <button
-                key={`${slot.slot_start}-${slot.status}`}
-                type="button"
-                onClick={() => {
-                  if (!isBooked) {
-                    setBookingTime(slot.slot_start)
-                  }
-                }}
-                disabled={isBooked}
-                className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
-                  isSelected
-                    ? 'border-teal-700 bg-teal-700 text-white shadow-md'
-                    : isBooked
-                      ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
-                      : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                }`}
-              >
-                {getSlotTime(slot.slot_start)}
-              </button>
-            )
-          })}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+            {daySlots.map((slot) => {
+              const isSelected = bookingTime === slot.slot_start
+              const isBooked = slot.status === 'booked'
+
+              return (
+                <button
+                  key={`${slot.slot_start}-${slot.status}`}
+                  type="button"
+                  onClick={() => {
+                    if (!isBooked) {
+                      setBookingTime(slot.slot_start)
+                    }
+                  }}
+                  disabled={isBooked}
+                  className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
+                    isSelected
+                      ? 'border-teal-700 bg-teal-700 text-white shadow-md'
+                      : isBooked
+                        ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
+                        : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  {getSlotTime(slot.slot_start)}
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : (
         <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
-          لا توجد أوقات متاحة في هذا اليوم
+          لا توجد أوقات عمل في هذا اليوم أو الطبيب غير متاح
         </p>
       )}
     </div>
@@ -597,35 +593,86 @@ export default function PatientDashboard() {
 
   return (
     <main
-      className="min-h-screen bg-gradient-to-b from-slate-50 to-teal-50/30 text-slate-950"
+      className="min-h-screen overflow-x-hidden bg-gradient-to-b from-slate-50 to-teal-50/30 text-slate-950"
       dir="rtl"
       lang="ar"
     >
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-teal-700 to-emerald-500 p-6 text-white shadow-xl sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-3xl font-black shadow-lg ring-1 ring-white/20 sm:h-24 sm:w-24">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
+        <section className="relative overflow-visible rounded-3xl bg-gradient-to-br from-teal-700 to-emerald-500 p-4 text-white shadow-xl sm:p-8">
+          <div className="absolute left-4 top-4 z-30">
+            <button
+              type="button"
+              onClick={() => setShowProfileMenu((currentValue) => !currentValue)}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-2xl font-black text-white shadow-sm ring-1 ring-white/20 transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60"
+              aria-haspopup="menu"
+              aria-expanded={showProfileMenu}
+              aria-label="فتح قائمة الملف الشخصي"
+            >
+              ⋮
+            </button>
+
+            <div
+              className={`absolute left-0 mt-3 w-56 origin-top-left rounded-2xl border border-slate-200 bg-white p-2 text-right text-slate-700 shadow-xl transition-all duration-200 ${
+                showProfileMenu
+                  ? 'translate-y-0 scale-100 opacity-100'
+                  : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
+              }`}
+              role="menu"
+            >
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition hover:bg-teal-50 hover:text-teal-800"
+                role="menuitem"
+              >
+                <span aria-hidden="true">👤</span>
+                الملف الشخصي
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowProfileMenu(false)}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition hover:bg-teal-50 hover:text-teal-800"
+                role="menuitem"
+              >
+                <span aria-hidden="true">⚙️</span>
+                الإعدادات
+              </button>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={authLoading}
+                className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                role="menuitem"
+              >
+                <span aria-hidden="true">🚪</span>
+                تسجيل الخروج
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 pt-8 sm:pt-0 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-5">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl font-black shadow-lg ring-1 ring-white/20 sm:h-24 sm:w-24 sm:rounded-3xl sm:text-3xl">
                 {patientDisplayName.slice(0, 1).toUpperCase()}
               </div>
 
-              <div className="min-w-0">
-                <p className="text-sm font-black text-teal-50">مرحباً بك</p>
-                <h1 className="mt-2 truncate text-3xl font-black tracking-normal sm:text-4xl">
+              <div className="min-w-0 pr-1 sm:pr-0">
+                <p className="text-xs font-black text-teal-50 sm:text-sm">مرحباً بك</p>
+                <h1 className="mt-1 truncate text-2xl font-black tracking-normal sm:mt-2 sm:text-4xl">
                   {patientDisplayName}
                 </h1>
-                <p className="mt-4 max-w-2xl text-sm font-semibold leading-8 text-teal-50 sm:text-base">
+                <p className="mt-2 max-w-2xl text-xs font-semibold leading-6 text-teal-50 sm:mt-4 sm:text-base sm:leading-8">
                   لديك {upcomingAppointments.length} موعداً قادماً و{' '}
                   {unreadNotificationsCount} إشعارات غير مقروءة
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:shrink-0">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
               <button
                 type="button"
                 onClick={() => navigate('/patient/book-appointment')}
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-5 text-sm font-black text-teal-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-teal-50 hover:text-teal-800"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-white px-5 text-sm font-black text-teal-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-teal-50 hover:text-teal-800 sm:w-auto sm:min-h-12"
               >
                 حجز موعد جديد
               </button>
@@ -633,23 +680,13 @@ export default function PatientDashboard() {
               <button
                 type="button"
                 onClick={() => navigate('/patient/appointments')}
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/20"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/20 sm:w-auto sm:min-h-12"
               >
                 مواعيدي
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSignOut}
-                disabled={authLoading}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-4 text-xs font-bold text-white/90 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                تسجيل الخروج
               </button>
             </div>
           </div>
         </section>
-
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <button
             type="button"
@@ -821,57 +858,6 @@ export default function PatientDashboard() {
             </div>
           </div>
         </section>
-
-        <header className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-5">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white text-2xl font-black text-teal-700 shadow-sm ring-1 ring-teal-100 sm:h-20 sm:w-20">
-              T
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-black text-teal-700">Tabibi</p>
-              <h1 className="mt-1 text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
-                لوحة المريض
-              </h1>
-              <p className="mt-3 text-base font-semibold leading-7 text-slate-700">
-                مرحباً بك، تابع مواعيدك وأطبائك بسهولة.
-              </p>
-              <p className="mt-1 truncate text-sm text-slate-500">
-                {authLoading
-                  ? 'جاري تحميل بيانات الحساب...'
-                  : user?.email ?? 'لا يوجد بريد إلكتروني'}
-              </p>
-            </div>
-          </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => navigate('/patient/book-appointment')}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-md"
-            >
-              حجز موعد جديد
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/patient/appointments')}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 bg-white/80 px-5 text-sm font-bold text-teal-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md"
-            >
-              مواعيدي
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={authLoading}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white/80 px-5 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              تسجيل الخروج
-            </button>
-            </div>
-          </div>
-        </header>
 
         {bookingSuccess ? (
           <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold leading-7 text-emerald-700">
@@ -1904,9 +1890,20 @@ export default function PatientDashboard() {
                           <span className="block font-bold text-slate-500 md:hidden">
                             تاريخ الموعد
                           </span>
-                          <span className="text-slate-700">
-                            {formatAppointmentDateTime(appointment.appointment_date)}
-                          </span>
+                          <div className="flex flex-col items-start gap-1 md:items-end">
+                            <div className="flex items-center gap-1 text-xl font-black text-teal-700">
+                              <span>
+                                {formatLocalAppointmentTime(appointment.appointment_date)}
+                              </span>
+                              <span aria-hidden="true">⏰</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm font-bold text-slate-500">
+                              <span>
+                                {formatLocalAppointmentDate(appointment.appointment_date)}
+                              </span>
+                              <span aria-hidden="true">📅</span>
+                            </div>
+                          </div>
                         </div>
                         <div className="md:p-3">
                           <span className="block font-bold text-slate-500 md:hidden">

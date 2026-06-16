@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PlatformStats from '../components/PlatformStats'
 
@@ -149,18 +150,9 @@ function PrimaryLink({ to, children }: { to: string; children: string }) {
   )
 }
 
-function SecondaryLink({ to, children }: { to: string; children: string }) {
-  return (
-    <Link
-      to={to}
-      className="inline-flex h-13 min-h-13 items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 text-sm font-black text-slate-800 shadow-sm transition hover:-translate-y-1 hover:bg-slate-50 hover:shadow-lg sm:h-14 sm:px-7 sm:text-base"
-    >
-      {children}
-    </Link>
-  )
-}
-
 export default function LandingPage() {
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+
   return (
     <main
       className="min-h-screen overflow-x-hidden bg-gradient-to-b from-slate-50 via-white to-teal-50 text-slate-950"
@@ -172,10 +164,11 @@ export default function LandingPage() {
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-5 sm:px-6 lg:px-8">
         <header className="sticky top-4 z-30 rounded-3xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur sm:px-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex items-center justify-between gap-4">
             <Link
               to="/"
               className="inline-flex items-center gap-3 text-lg font-black text-teal-800"
+              onClick={() => setShowMobileMenu(false)}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-700 text-xl text-white shadow-md">
                 🩺
@@ -183,7 +176,17 @@ export default function LandingPage() {
               <span>Tabibi</span>
             </Link>
 
-            <nav className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu((currentValue) => !currentValue)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-100 bg-white text-2xl font-black text-teal-800 shadow-sm transition hover:bg-teal-50 md:hidden"
+              aria-label="فتح القائمة"
+              aria-expanded={showMobileMenu}
+            >
+              ☰
+            </button>
+
+            <nav className="hidden gap-3 md:flex md:items-center">
               <Link
                 to="/login"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 bg-white px-5 text-sm font-black text-teal-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-teal-50 hover:shadow-md"
@@ -197,6 +200,43 @@ export default function LandingPage() {
                 إنشاء حساب
               </Link>
             </nav>
+
+            <div
+              className={`absolute left-0 top-full mt-3 w-64 origin-top-left rounded-2xl border border-slate-200 bg-white p-2 text-right shadow-xl transition-all duration-200 md:hidden ${
+                showMobileMenu
+                  ? 'translate-y-0 scale-100 opacity-100'
+                  : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
+              }`}
+            >
+              <Link
+                to="/login"
+                onClick={() => setShowMobileMenu(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
+              >
+                تسجيل الدخول
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setShowMobileMenu(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
+              >
+                إنشاء حساب
+              </Link>
+              <a
+                href="#about"
+                onClick={() => setShowMobileMenu(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
+              >
+                من نحن
+              </a>
+              <a
+                href="#contact"
+                onClick={() => setShowMobileMenu(false)}
+                className="block rounded-xl px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-teal-50 hover:text-teal-800"
+              >
+                تواصل معنا
+              </a>
+            </div>
           </div>
         </header>
 
@@ -212,7 +252,6 @@ export default function LandingPage() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <PrimaryLink to="/register">ابدأ الآن</PrimaryLink>
-              <SecondaryLink to="/login">تسجيل الدخول</SecondaryLink>
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -305,7 +344,7 @@ export default function LandingPage() {
 
         <PlatformStats />
 
-        <section>
+        <section id="about">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-black text-teal-700">التخصصات</p>
             <h2 className="mt-3 text-3xl font-black tracking-normal text-slate-950 sm:text-4xl">
@@ -520,7 +559,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <footer className="border-t border-slate-200 py-8">
+        <footer id="contact" className="border-t border-slate-200 py-8">
           <div className="flex flex-col gap-4 text-center sm:flex-row sm:items-center sm:justify-between sm:text-right">
             <div>
               <Link to="/" className="text-xl font-black text-teal-800">

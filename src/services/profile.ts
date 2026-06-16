@@ -13,7 +13,7 @@ export interface Profile {
 
 export type CreateProfileData = {
   id: string
-  email?: string | null
+  email: string
   full_name: string
   role: UserRole
   phone?: string | null
@@ -69,6 +69,7 @@ export async function getProfile(): Promise<Profile> {
 export async function createProfile(data: CreateProfileData): Promise<Profile> {
   console.log('PROFILE CREATION', {
     id: data.id,
+    email: data.email,
     full_name: data.full_name,
     role: data.role,
   })

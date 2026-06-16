@@ -1,9 +1,10 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { UserRole } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { createDoctorProfile } from '../services/doctor'
+import { createProfile } from '../services/profile'
 import { MOROCCAN_CITIES } from '../utils/cities'
 import { getSpecialtyMeta, MEDICAL_SPECIALTIES } from '../utils/specialties'
 
@@ -28,6 +29,7 @@ const roleOptions: Array<{
 ]
 
 export default function RegisterPage() {
+  const navigate = useNavigate()
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -39,6 +41,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [statusMessage, setStatusMessage] = useState('')
 
   const resetForm = () => {
     setFullName('')
@@ -49,12 +52,14 @@ export default function RegisterPage() {
     setSpecialty('')
     setCity('')
     setClinicName('')
+    setStatusMessage('')
   }
 
   const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage('')
     setSuccessMessage('')
+    setStatusMessage('')
 
     if (!role) {
       setErrorMessage('يرجى اختيار نوع الحساب.')
@@ -97,13 +102,27 @@ export default function RegisterPage() {
         throw new Error('لم يتم إنشاء الحساب. يرجى المحاولة مرة أخرى.')
       }
 
+      const profileEmail = data.user.email ?? email
+
       console.log('SIGNUP USER ID', data.user.id)
       console.log('PROFILE CREATION', {
         source: 'database trigger',
         id: data.user.id,
+        email: profileEmail,
         full_name: fullName,
         role,
       })
+
+      if (data.session) {
+        await createProfile({
+          id: data.user.id,
+          email: profileEmail,
+          full_name: fullName,
+          role,
+          phone: phone.trim() || null,
+        })
+      }
+
       console.log('DOCTOR CREATION', {
         source: role === 'doctor' ? 'client insert with database trigger fallback' : 'not applicable',
         user_id: data.user.id,
@@ -113,22 +132,39 @@ export default function RegisterPage() {
         clinic_name: role === 'doctor' ? clinicName.trim() || null : null,
       })
 
-      if (role === 'doctor') {
+      if (role === 'doctor' && data.session) {
         const doctor = await createDoctorProfile({
-          userId: data.user.id,
+          user_id: data.user.id,
           fullName,
           specialty: specialty.trim(),
           city: city.trim(),
           clinicName: clinicName.trim() || null,
           phone: phone.trim() || null,
-          email: data.user.email ?? email,
+          email: profileEmail,
         })
 
         console.log('DOCTOR CREATION RESULT', doctor)
+      } else if (role === 'doctor') {
+        console.log('DOCTOR CREATION SKIPPED CLIENT INSERT', {
+          reason: 'No authenticated session after sign up. Database trigger must create linked doctor row.',
+          user_id: data.user.id,
+        })
       }
 
-      setSuccessMessage('تم إنشاء الحساب بنجاح. يمكنك تسجيل الدخول الآن.')
+      setStatusMessage('جاري تسجيل الدخول...')
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+
+      if (sessionError || !session) {
+        navigate('/login', { replace: true })
+        return
+      }
+
       resetForm()
+      navigate(role === 'doctor' ? '/doctor' : '/patient', { replace: true })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'تعذر إنشاء الحساب. يرجى المحاولة مرة أخرى.'
@@ -375,6 +411,12 @@ export default function RegisterPage() {
               </div>
             ) : null}
 
+            {statusMessage ? (
+              <p className="rounded-2xl border border-teal-100 bg-teal-50 px-4 py-3 text-sm font-semibold leading-7 text-teal-700">
+                {statusMessage}
+              </p>
+            ) : null}
+
             {successMessage ? (
               <p className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-7 text-emerald-700">
                 {successMessage}
@@ -392,7 +434,7 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="flex h-14 w-full items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-black text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-teal-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
+              {statusMessage || (isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب')}
             </button>
 
             <p className="text-center text-sm text-slate-600">

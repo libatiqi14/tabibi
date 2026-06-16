@@ -12,8 +12,9 @@ import {
 } from '../../services/reviews'
 import {
   buildAppointmentDateTime,
-  formatAppointmentDateTime,
   formatAppointmentDateTimeLocalInput,
+  formatLocalAppointmentDate,
+  formatLocalAppointmentTime,
 } from '../../utils/dateTime'
 
 const statusLabels: Record<string, string> = {
@@ -324,9 +325,20 @@ export default function MyAppointments() {
 
                       <div>
                         <p className="text-xs font-bold text-slate-500">تاريخ الموعد</p>
-                        <p className="mt-1 text-sm text-slate-700">
-                          {formatAppointmentDateTime(appointment.appointment_date)}
-                        </p>
+                        <div className="mt-1 flex flex-col items-start gap-1">
+                          <div className="flex items-center gap-1 text-xl font-black text-teal-700">
+                            <span>
+                              {formatLocalAppointmentTime(appointment.appointment_date)}
+                            </span>
+                            <span aria-hidden="true">⏰</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm font-bold text-slate-500">
+                            <span>
+                              {formatLocalAppointmentDate(appointment.appointment_date)}
+                            </span>
+                            <span aria-hidden="true">📅</span>
+                          </div>
+                        </div>
                       </div>
 
                       <div>

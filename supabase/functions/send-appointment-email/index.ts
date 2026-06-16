@@ -14,6 +14,7 @@ type EmailNotificationRow = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
+const emailFrom = Deno.env.get('EMAIL_FROM') ?? 'onboarding@resend.dev'
 
 if (!supabaseUrl) {
   throw new Error('Missing SUPABASE_URL environment variable.')
@@ -85,7 +86,7 @@ async function sendEmail(row: EmailNotificationRow) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'onboarding@resend.dev',
+      from: emailFrom,
       to: recipient,
       subject,
       html: getHtml(row),
@@ -96,7 +97,8 @@ async function sendEmail(row: EmailNotificationRow) {
   const responseBody = await response.json().catch(() => null)
 
   if (!response.ok) {
-    console.error('Resend email failed', {
+    console.error('Resend email failed', responseBody)
+    console.error('Resend email failed details', {
       id: row.id,
       status: response.status,
       body: responseBody,
@@ -151,6 +153,7 @@ serve(async (request) => {
         .update({
           status: 'sent',
           sent_at: new Date().toISOString(),
+          error_message: null,
         })
         .eq('id', row.id)
 
@@ -170,7 +173,10 @@ serve(async (request) => {
 
       const { error: updateError } = await supabase
         .from('email_notifications')
-        .update({ status: 'failed' })
+        .update({
+          status: 'failed',
+          error_message: message,
+        })
         .eq('id', row.id)
 
       if (updateError) {

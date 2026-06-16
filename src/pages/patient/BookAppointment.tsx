@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createAppointment } from '../../services/appointments'
@@ -20,10 +20,6 @@ import {
   formatAppointmentDateInput,
 } from '../../utils/dateTime'
 
-const WORKING_DAY_START_MINUTES = 9 * 60
-const WORKING_DAY_END_MINUTES = 18 * 60
-const SLOT_INTERVAL_MINUTES = 10
-
 function getTodayInputValue() {
   return formatAppointmentDateInput()
 }
@@ -41,24 +37,6 @@ function toSqlDate(date: string) {
   }
 
   return date
-}
-
-function getSlotMinutes(slotStart: string) {
-  const [hours = '0', minutes = '0'] = slotStart.slice(0, 5).split(':')
-
-  return Number(hours) * 60 + Number(minutes)
-}
-
-function isAllowedSlot(slot: DoctorDaySlot) {
-  const slotTime = slot.slot_start.slice(0, 5)
-  const minutes = getSlotMinutes(slotTime)
-
-  return (
-    /^\d{2}:\d{2}$/.test(slotTime) &&
-    minutes >= WORKING_DAY_START_MINUTES &&
-    minutes < WORKING_DAY_END_MINUTES &&
-    minutes % SLOT_INTERVAL_MINUTES === 0
-  )
 }
 
 function getSlotTime(slotStart: string) {
@@ -222,10 +200,10 @@ export default function BookAppointment() {
 
         const slots = await getDoctorDaySlots(doctorId, sqlDate)
 
-        console.log('BOOKING RETURNED AVAILABLE SLOTS', slots)
+        console.log('BOOKING RETURNED DAY SLOTS', slots)
 
         if (isMounted) {
-          setDaySlots(slots.filter(isAllowedSlot))
+          setDaySlots(slots)
         }
       } catch (error) {
         console.log('BOOKING AVAILABLE SLOTS RPC ERROR', error)
@@ -271,6 +249,7 @@ export default function BookAppointment() {
   const selectedDoctorReviews = selectedDoctor
     ? reviewsByDoctorId[selectedDoctor.id] ?? []
     : []
+  const selectedDaySlot = daySlots.find((slot) => slot.slot_start === selectedSlot)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -279,6 +258,11 @@ export default function BookAppointment() {
 
     if (!city || !specialty || !selectedDoctor || !appointmentDay || !selectedSlot) {
       setErrorMessage('يرجى تعبئة جميع الحقول المطلوبة.')
+      return
+    }
+
+    if (!selectedDaySlot || selectedDaySlot.status !== 'available') {
+      setErrorMessage('يرجى اختيار وقت متاح.')
       return
     }
 
@@ -587,37 +571,45 @@ export default function BookAppointment() {
                   جاري تحميل الأوقات المتاحة...
                 </p>
               ) : daySlots.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                  {daySlots.map((slot) => {
-                    const isSelected = selectedSlot === slot.slot_start
-                    const isBooked = slot.status === 'booked'
+                <div className="grid gap-3">
+                  {daySlots.every((slot) => slot.status === 'booked') ? (
+                    <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+                      جميع الأوقات محجوزة في هذا اليوم
+                    </p>
+                  ) : null}
 
-                    return (
-                      <button
-                        key={`${slot.slot_start}-${slot.status}`}
-                        type="button"
-                        onClick={() => {
-                          if (!isBooked) {
-                            setSelectedSlot(slot.slot_start)
-                          }
-                        }}
-                        disabled={isBooked}
-                        className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
-                          isSelected
-                            ? 'border-teal-700 bg-teal-700 text-white shadow-md'
-                            : isBooked
-                              ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
-                              : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {getSlotTime(slot.slot_start)}
-                      </button>
-                    )
-                  })}
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                    {daySlots.map((slot) => {
+                      const isSelected = selectedSlot === slot.slot_start
+                      const isBooked = slot.status === 'booked'
+
+                      return (
+                        <button
+                          key={`${slot.slot_start}-${slot.status}`}
+                          type="button"
+                          onClick={() => {
+                            if (!isBooked) {
+                              setSelectedSlot(slot.slot_start)
+                            }
+                          }}
+                          disabled={isBooked}
+                          className={`min-h-11 rounded-lg border px-3 text-sm font-bold transition ${
+                            isSelected
+                              ? 'border-teal-700 bg-teal-700 text-white shadow-md'
+                              : isBooked
+                                ? 'cursor-not-allowed border-rose-300 bg-rose-50 text-rose-600 opacity-70'
+                                : 'cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {getSlotTime(slot.slot_start)}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               ) : (
                 <p className="rounded-lg bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600">
-                  لا توجد أوقات متاحة في هذا اليوم
+                  لا توجد أوقات عمل في هذا اليوم أو الطبيب غير متاح
                 </p>
               )}
             </div>

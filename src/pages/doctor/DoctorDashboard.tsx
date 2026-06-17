@@ -12,12 +12,13 @@ import {
 } from '../../services/doctor'
 import { getDoctorStats, type DoctorStats } from '../../services/doctorStats'
 import {
+  formatAppointmentDateInput,
   formatLocalAppointmentDate,
   formatLocalAppointmentTime,
   isAppointmentToday,
 } from '../../utils/dateTime'
 
-type AppointmentTab = 'today' | 'upcoming' | 'confirmed' | 'completed' | 'cancelled' | 'all'
+type AppointmentStatusFilter = AppointmentStatus | 'all'
 
 const statusLabels: Record<AppointmentStatus, string> = {
   scheduled: 'مجدول',
@@ -33,13 +34,12 @@ const statusClasses: Record<AppointmentStatus, string> = {
   cancelled: 'bg-red-100 text-red-700',
 }
 
-const tabLabels: Record<AppointmentTab, string> = {
-  today: 'اليوم',
-  upcoming: 'القادمة',
+const statusFilterLabels: Record<AppointmentStatusFilter, string> = {
+  all: 'الكل',
+  scheduled: 'المجدولة',
   confirmed: 'المؤكدة',
   completed: 'المكتملة',
   cancelled: 'الملغاة',
-  all: 'الكل',
 }
 
 function getStatusLabel(status: string) {
@@ -82,6 +82,49 @@ function sortByAppointmentDate(appointments: Appointment[]) {
   )
 }
 
+function getDateFromInput(dateInput: string) {
+  const [year, month, day] = dateInput.split('-').map(Number)
+
+  return new Date(year, month - 1, day)
+}
+
+function addDaysToDateInput(dateInput: string, days: number) {
+  const date = getDateFromInput(dateInput)
+  date.setDate(date.getDate() + days)
+
+  return formatAppointmentDateInput(date)
+}
+
+function formatDisplayDate(dateInput: string) {
+  const [year, month, day] = dateInput.split('-')
+
+  return `${day}/${month}/${year}`
+}
+
+function formatDayTabDate(dateInput: string) {
+  const date = getDateFromInput(dateInput)
+  const weekday = new Intl.DateTimeFormat('ar-MA', { weekday: 'long' }).format(date)
+  const [, month, day] = dateInput.split('-')
+
+  return `${weekday} ${day}/${month}`
+}
+
+function getRelativeDayLabel(dateInput: string, index: number) {
+  if (index === 0) {
+    return 'اليوم'
+  }
+
+  if (index === 1) {
+    return 'غداً'
+  }
+
+  if (index === 2) {
+    return 'بعد غد'
+  }
+
+  return formatDayTabDate(dateInput)
+}
+
 export default function DoctorDashboard() {
   const navigate = useNavigate()
   const { signOut } = useAuth()
@@ -93,7 +136,9 @@ export default function DoctorDashboard() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [showDoctorSettingsMenu, setShowDoctorSettingsMenu] = useState(false)
   const [showOverviewStats, setShowOverviewStats] = useState(false)
-  const [activeTab, setActiveTab] = useState<AppointmentTab>('today')
+  const [selectedDate, setSelectedDate] = useState(() => formatAppointmentDateInput())
+  const [activeStatusFilter, setActiveStatusFilter] =
+    useState<AppointmentStatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -103,78 +148,74 @@ export default function DoctorDashboard() {
     [appointments],
   )
 
-  const nextAppointment = useMemo(() => {
-    const now = new Date()
-
-    return sortByAppointmentDate(
-      appointments.filter(
-        (appointment) =>
-          ['scheduled', 'confirmed'].includes(appointment.status) &&
-          new Date(appointment.appointment_date) >= now,
-      ),
-    )[0]
-  }, [appointments])
-
   const todayAppointmentsCount = todayAppointments.length
-  const scheduledAppointmentsCount = appointments.filter(
+  const selectedDayAppointments = useMemo(
+    () =>
+      sortByAppointmentDate(
+        appointments.filter(
+          (appointment) =>
+            formatAppointmentDateInput(appointment.appointment_date) === selectedDate,
+        ),
+      ),
+    [appointments, selectedDate],
+  )
+  const searchScopedDayAppointments = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase()
+
+    if (!normalizedSearch) {
+      return selectedDayAppointments
+    }
+
+    return selectedDayAppointments.filter((appointment) =>
+      getPatientSearchText(appointment).includes(normalizedSearch),
+    )
+  }, [searchQuery, selectedDayAppointments])
+  const scheduledAppointmentsCount = searchScopedDayAppointments.filter(
     (appointment) => appointment.status === 'scheduled',
   ).length
-  const confirmedAppointmentsCount = appointments.filter(
+  const confirmedAppointmentsCount = searchScopedDayAppointments.filter(
     (appointment) => appointment.status === 'confirmed',
-  ).length
-  const completedAppointmentsCount = appointments.filter(
-    (appointment) => appointment.status === 'completed',
   ).length
   const cancelledAppointmentsCount = appointments.filter(
     (appointment) => appointment.status === 'cancelled',
   ).length
-  const tabCounts: Record<AppointmentTab, number> = {
-    today: todayAppointmentsCount,
-    upcoming: appointments.filter(
-      (appointment) =>
-        ['scheduled', 'confirmed'].includes(appointment.status) &&
-        new Date(appointment.appointment_date) >= new Date(),
-    ).length,
+  const selectedDayCompletedAppointmentsCount = searchScopedDayAppointments.filter(
+    (appointment) => appointment.status === 'completed',
+  ).length
+  const selectedDayCancelledAppointmentsCount = searchScopedDayAppointments.filter(
+    (appointment) => appointment.status === 'cancelled',
+  ).length
+  const statusFilterCounts: Record<AppointmentStatusFilter, number> = {
+    all: searchScopedDayAppointments.length,
+    scheduled: scheduledAppointmentsCount,
     confirmed: confirmedAppointmentsCount,
-    completed: completedAppointmentsCount,
-    cancelled: cancelledAppointmentsCount,
-    all: appointments.length,
+    completed: selectedDayCompletedAppointmentsCount,
+    cancelled: selectedDayCancelledAppointmentsCount,
   }
+  const visibleDayTabs = useMemo(() => {
+    const today = formatAppointmentDateInput()
+
+    return Array.from({ length: 5 }, (_, index) => {
+      const date = addDaysToDateInput(today, index)
+
+      return {
+        date,
+        label: getRelativeDayLabel(date, index),
+      }
+    })
+  }, [])
 
   const filteredAppointments = useMemo(() => {
-    const now = new Date()
-    const normalizedSearch = searchQuery.trim().toLowerCase()
-
     return sortByAppointmentDate(
-      appointments.filter((appointment) => {
-        const appointmentDate = new Date(appointment.appointment_date)
-        const patientSearchText = getPatientSearchText(appointment)
-        const matchesSearch =
-          !normalizedSearch || patientSearchText.includes(normalizedSearch)
-
-        if (!matchesSearch) {
-          return false
-        }
-
-        if (activeTab === 'today') {
-          return isTodayAppointment(appointment)
-        }
-
-        if (activeTab === 'upcoming') {
-          return (
-            ['scheduled', 'confirmed'].includes(appointment.status) &&
-            appointmentDate >= now
-          )
-        }
-
-        if (activeTab === 'all') {
+      searchScopedDayAppointments.filter((appointment) => {
+        if (activeStatusFilter === 'all') {
           return true
         }
 
-        return appointment.status === activeTab
+        return appointment.status === activeStatusFilter
       }),
     )
-  }, [activeTab, appointments, searchQuery])
+  }, [activeStatusFilter, searchScopedDayAppointments])
 
   useEffect(() => {
     let isMounted = true
@@ -294,12 +335,12 @@ export default function DoctorDashboard() {
               onClick={() =>
                 setShowDoctorSettingsMenu((currentValue) => !currentValue)
               }
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-2xl font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-teal-50 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100"
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(15,118,110,0.08)] text-2xl font-black leading-none text-[#0f766e] shadow-sm transition hover:bg-[rgba(15,118,110,0.15)] focus:outline-none focus:ring-2 focus:ring-teal-100"
               aria-haspopup="menu"
               aria-expanded={showDoctorSettingsMenu}
-              aria-label="فتح قائمة إعدادات الطبيب"
+              aria-label="القائمة الرئيسية"
             >
-              ⋮
+              ☰
             </button>
 
             <div
@@ -378,67 +419,6 @@ export default function DoctorDashboard() {
             {successMessage}
           </p>
         ) : null}
-
-        <section className="grid gap-3">
-          <div>
-            <p className="text-sm font-black text-teal-700">مؤشرات اليوم</p>
-            <h2 className="mt-1 text-xl font-black tracking-normal text-slate-950 sm:text-2xl">
-              سير العمل اليومي
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[
-              {
-                icon: '🟡',
-                label: 'مواعيد اليوم',
-                value: todayAppointmentsCount,
-                className: 'border-amber-100 bg-amber-50 text-amber-700',
-                onClick: () => setActiveTab('today'),
-              },
-              {
-                icon: '🟠',
-                label: 'غير مؤكدة',
-                value: scheduledAppointmentsCount,
-                className: 'border-amber-100 bg-amber-50 text-amber-700',
-                onClick: () => setActiveTab('all'),
-              },
-              {
-                icon: '🟢',
-                label: 'مؤكدة',
-                value: confirmedAppointmentsCount,
-                className: 'border-green-100 bg-green-50 text-green-700',
-                onClick: () => setActiveTab('confirmed'),
-              },
-              {
-                icon: '🔵',
-                label: 'الموعد القادم',
-                value: nextAppointment
-                  ? formatLocalAppointmentTime(nextAppointment.appointment_date)
-                  : 'لا يوجد',
-                className: 'border-blue-100 bg-blue-50 text-blue-700',
-                onClick: () => setActiveTab('upcoming'),
-              },
-            ].map((stat) => (
-              <button
-                key={stat.label}
-                type="button"
-                onClick={stat.onClick}
-                className={`h-24 rounded-2xl border p-4 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:min-h-20 sm:h-auto sm:p-3 ${stat.className}`}
-              >
-                <p className="text-2xl font-black leading-none">
-                  <span className="ml-1 text-lg" aria-hidden="true">
-                    {stat.icon}
-                  </span>
-                  {isLoading ? '...' : stat.value}
-                </p>
-                <p className="mt-2 text-sm font-bold leading-5 text-slate-700">
-                  {stat.label}
-                </p>
-              </button>
-            ))}
-          </div>
-        </section>
 
         <section className="grid gap-3">
           <div className="flex justify-end">
@@ -575,74 +555,18 @@ export default function DoctorDashboard() {
           ))}
         </section>
 
-        <section className="hidden gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            {
-              icon: '🟡',
-              label: 'مواعيد اليوم',
-              value: todayAppointmentsCount,
-              className: 'border-amber-200 bg-amber-50 text-amber-700',
-            },
-            {
-              icon: '🟠',
-              label: 'غير مؤكدة',
-              value: scheduledAppointmentsCount,
-              className: 'border-amber-100 bg-amber-50 text-amber-700',
-            },
-            {
-              icon: '🟢',
-              label: 'مؤكدة',
-              value: confirmedAppointmentsCount,
-              className: 'border-green-200 bg-green-50 text-green-700',
-            },
-            {
-              icon: '🔵',
-              label: 'مكتملة',
-              value: completedAppointmentsCount,
-              className: 'border-blue-200 bg-blue-50 text-blue-700',
-            },
-            {
-              icon: '🔴',
-              label: 'ملغاة',
-              value: cancelledAppointmentsCount,
-              className: 'border-red-200 bg-red-50 text-red-700',
-            },
-          ].map((stat) => (
-            <button
-              key={stat.label}
-              type="button"
-              onClick={() => {
-                if (stat.label === 'مواعيد اليوم') setActiveTab('today')
-                if (stat.label === 'غير مؤكدة') setActiveTab('all')
-                if (stat.label === 'مؤكدة') setActiveTab('confirmed')
-                if (stat.label === 'مكتملة') setActiveTab('completed')
-                if (stat.label === 'ملغاة') setActiveTab('cancelled')
-              }}
-              className={`rounded-2xl border p-5 text-right shadow-sm transition hover:-translate-y-1 hover:shadow-md ${stat.className}`}
-            >
-              <p className="text-3xl font-black">
-                <span className="ml-2" aria-hidden="true">
-                  {stat.icon}
-                </span>
-                {isLoading ? '...' : stat.value}
-              </p>
-              <p className="mt-3 text-sm font-bold text-slate-700">{stat.label}</p>
-            </button>
-          ))}
-        </section>
-
         <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="mb-4 grid gap-4 lg:grid-cols-[1fr_minmax(280px,380px)] lg:items-center">
+          <div className="mb-3 grid gap-3 lg:grid-cols-[1fr_minmax(280px,380px)] lg:items-center">
             <div className="flex items-start gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-2xl shadow-sm ring-1 ring-teal-100">
                 📅
               </span>
               <div className="min-w-0">
                 <h2 className="text-2xl font-black tracking-normal text-slate-950">
-                  المواعيد
+                  مواعيد يوم {formatDisplayDate(selectedDate)}
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                  لديك {todayAppointmentsCount} موعد اليوم، و {confirmedAppointmentsCount}{' '}
+                  لديك {selectedDayAppointments.length} موعداً في هذا اليوم، و {confirmedAppointmentsCount}{' '}
                   موعداً مؤكداً.
                 </p>
               </div>
@@ -663,33 +587,91 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          <div className="mb-4">
-            <p className="mb-2 text-sm font-black text-slate-700">تصفية المواعيد</p>
+          <div className="mb-3 grid gap-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <p className="mb-2 text-sm font-black text-slate-700">اختر اليوم</p>
+                <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div className="inline-flex min-w-full gap-2 whitespace-nowrap lg:min-w-0">
+                    {visibleDayTabs.map((day) => (
+                      <button
+                        key={day.date}
+                        type="button"
+                        onClick={() => setSelectedDate(day.date)}
+                        className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-2xl border px-4 text-sm font-black transition ${
+                          selectedDate === day.date
+                            ? 'border-teal-600 bg-teal-600 text-white shadow-md'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-800'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedDate((currentDate) => addDaysToDateInput(currentDate, -1))
+                  }
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 hover:text-teal-700"
+                >
+                  السابق
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(event) => {
+                    if (event.target.value) {
+                      setSelectedDate(event.target.value)
+                    }
+                  }}
+                  className="min-h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
+                  aria-label="اختر اليوم"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedDate((currentDate) => addDaysToDateInput(currentDate, 1))
+                  }
+                  className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 hover:text-teal-700"
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+
+            <p className="text-sm font-black text-slate-700">تصفية الحالة</p>
             <div className="overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="inline-flex min-w-full gap-1 rounded-2xl bg-slate-100 p-1 shadow-inner whitespace-nowrap lg:min-w-0">
-                {(Object.keys(tabLabels) as AppointmentTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition sm:px-4 ${
-                          activeTab === tab
+                {(Object.keys(statusFilterLabels) as AppointmentStatusFilter[]).map(
+                  (statusFilter) => (
+                    <button
+                      key={statusFilter}
+                      type="button"
+                      onClick={() => setActiveStatusFilter(statusFilter)}
+                      className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition sm:px-4 ${
+                          activeStatusFilter === statusFilter
                             ? 'bg-teal-600 text-white shadow-md'
-                        : 'text-slate-600 hover:bg-white hover:text-teal-700'
-                    }`}
-                  >
-                    <span>{tabLabels[tab]}</span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${
-                        activeTab === tab
-                          ? 'bg-white/20 text-white'
-                          : 'bg-white text-slate-500'
-                      }`}
+                            : 'text-slate-600 hover:bg-white hover:text-teal-700'
+                        }`}
                     >
-                      {tabCounts[tab]}
-                    </span>
-                  </button>
-                ))}
+                      <span>{statusFilterLabels[statusFilter]}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          activeStatusFilter === statusFilter
+                            ? 'bg-white/20 text-white'
+                            : 'bg-white text-slate-500'
+                        }`}
+                      >
+                        {statusFilterCounts[statusFilter]}
+                      </span>
+                    </button>
+                  ),
+                )}
               </div>
             </div>
           </div>
@@ -825,7 +807,9 @@ export default function DoctorDashboard() {
             </div>
           ) : (
             <p className="mt-6 rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-600">
-              لا توجد مواعيد مطابقة
+              {selectedDayAppointments.length === 0
+                ? 'لا توجد مواعيد في هذا اليوم'
+                : 'لا توجد مواعيد مطابقة'}
             </p>
           )}
         </section>

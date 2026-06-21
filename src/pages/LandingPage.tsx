@@ -143,7 +143,7 @@ function PrimaryLink({ to, children }: { to: string; children: string }) {
   return (
     <Link
       to={to}
-      className="inline-flex h-13 min-h-13 items-center justify-center rounded-2xl bg-teal-700 px-6 text-sm font-black text-white shadow-lg transition hover:-translate-y-1 hover:bg-teal-800 hover:shadow-xl sm:h-14 sm:px-7 sm:text-base"
+      className="inline-flex h-13 min-h-13 w-full items-center justify-center rounded-2xl bg-teal-700 px-6 text-sm font-black text-white shadow-lg transition hover:-translate-y-1 hover:bg-teal-800 hover:shadow-xl sm:h-14 sm:w-auto sm:px-7 sm:text-base"
     >
       {children}
     </Link>
@@ -254,7 +254,22 @@ export default function LandingPage() {
               <PrimaryLink to="/register">ابدأ الآن</PrimaryLink>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid gap-3 md:hidden">
+              <Link
+                to="/register"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-teal-200 bg-white px-6 text-sm font-bold text-teal-700 shadow-sm transition-colors hover:bg-teal-50 hover:text-teal-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-100"
+              >
+                إنشاء حساب
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-100"
+              >
+                تسجيل الدخول
+              </Link>
+            </div>
+
+            <div className="mt-8 hidden gap-3 md:grid md:grid-cols-3">
               {['مرضى', 'أطباء', 'مواعيد آمنة'].map((item) => (
                 <div
                   key={item}
@@ -546,13 +561,14 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               to="/register"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-bold text-teal-700 shadow-md transition hover:bg-teal-50 hover:text-teal-800"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-6 text-base font-bold text-teal-700 shadow-lg transition-colors duration-200 hover:bg-teal-50 hover:text-teal-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60"
+              style={{ color: '#0f766e' }}
             >
               إنشاء حساب
             </Link>
             <Link
               to="/login"
-              className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-7 text-base font-black text-white transition hover:-translate-y-1 hover:bg-white/20"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/45 bg-white/[0.12] px-6 text-base font-bold text-white transition-colors duration-200 hover:bg-white/[0.18] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
             >
               تسجيل الدخول
             </Link>

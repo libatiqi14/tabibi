@@ -95,6 +95,7 @@ export default function BookAppointment() {
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false)
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showDoctorProfile, setShowDoctorProfile] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -105,6 +106,10 @@ export default function BookAppointment() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    setShowDoctorProfile(false)
+  }, [doctorId])
 
   useEffect(() => {
     let isMounted = true
@@ -426,9 +431,9 @@ export default function BookAppointment() {
             </div>
 
             {selectedDoctor ? (
-              <article className="rounded-lg border border-teal-100 bg-teal-50/60 p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white text-xl font-bold text-teal-800 ring-1 ring-teal-100">
+              <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+                <div className="grid min-h-24 grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-xl font-bold text-teal-800 ring-1 ring-teal-100 sm:h-20 sm:w-20">
                     {selectedDoctor.avatar_url ? (
                       <img
                         src={selectedDoctor.avatar_url}
@@ -440,89 +445,42 @@ export default function BookAppointment() {
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-lg font-bold text-slate-950">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-black text-slate-950 sm:text-lg">
                       {selectedDoctor.full_name}
                     </h2>
-                    <p className="mt-1 text-sm font-semibold text-teal-800">
-                      {selectedDoctor.specialty}
+                    <p className="mt-1 truncate text-sm font-bold text-teal-700">
+                      {getSpecialtyMeta(selectedDoctor.specialty).icon}{' '}
+                      {getSpecialtyMeta(selectedDoctor.specialty).labelAr}
                     </p>
                     {selectedDoctor.city ? (
-                      <p className="mt-2 text-sm font-semibold text-slate-600">
+                      <p className="mt-1 truncate text-xs font-semibold text-slate-500 sm:text-sm">
                         {'\uD83D\uDCCD '}
                         {selectedDoctor.city}
                       </p>
                     ) : null}
-                    {selectedDoctor.address ? (
-                      <p className="mt-2 text-sm font-semibold text-slate-600">
-                        {'\uD83C\uDFE5 '}
-                        {selectedDoctor.address}
-                      </p>
-                    ) : null}
-                    <p className="mt-2 text-sm font-bold text-amber-600">
+                    <p className="mt-1 truncate text-xs font-bold text-amber-600 sm:text-sm">
                       {selectedDoctorReviewStats?.reviewCount
                         ? `⭐ ${selectedDoctorReviewStats.averageRating?.toFixed(1)} (${selectedDoctorReviewStats.reviewCount} تقييم)`
                         : 'لا توجد تقييمات بعد'}
                     </p>
+                  </div>
 
-                    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <dt className="font-bold text-slate-600">سنوات الخبرة</dt>
-                        <dd className="mt-1 text-slate-950">
-                          {selectedDoctor.years_experience != null
-                            ? `${selectedDoctor.years_experience} سنة`
-                            : 'غير متوفر'}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt className="font-bold text-slate-600">كلية الطب</dt>
-                        <dd className="mt-1 text-slate-950">
-                          {selectedDoctor.medical_school ?? 'غير متوفر'}
-                        </dd>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <dt className="font-bold text-slate-600">
-                          المستشفيات السابقة
-                        </dt>
-                        <dd className="mt-1 text-slate-950">
-                          {joinList(selectedDoctor.previous_hospitals)}
-                        </dd>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <dt className="font-bold text-slate-600">نبذة مهنية</dt>
-                        <dd className="mt-1 leading-7 text-slate-700">
-                          {selectedDoctor.biography ?? 'غير متوفر'}
-                        </dd>
-                      </div>
-                    </dl>
-
-                    {selectedDoctorReviews.filter((review) => review.comment).length >
-                    0 ? (
-                      <div className="mt-4 rounded-lg bg-white/80 p-3">
-                        <p className="text-sm font-bold text-slate-800">
-                          أحدث تعليقات المرضى
-                        </p>
-                        <div className="mt-3 grid gap-2">
-                          {selectedDoctorReviews
-                            .filter((review) => review.comment)
-                            .slice(0, 3)
-                            .map((review) => (
-                              <blockquote
-                                key={review.id}
-                                className="rounded-lg bg-slate-50 px-3 py-2 text-sm leading-7 text-slate-700"
-                              >
-                                <span className="font-bold text-amber-600">
-                                  {'★'.repeat(review.rating)}
-                                </span>{' '}
-                                {review.comment}
-                              </blockquote>
-                            ))}
-                        </div>
-                      </div>
-                    ) : null}
+                  <div className="flex shrink-0 flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setDoctorId('')}
+                      className="inline-flex min-h-8 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-700 transition hover:bg-slate-50 sm:px-3 sm:text-xs"
+                    >
+                      تغيير الطبيب
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDoctorProfile(true)}
+                      className="inline-flex min-h-8 items-center justify-center rounded-lg bg-teal-50 px-2 text-[11px] font-bold text-teal-700 transition hover:bg-teal-100 sm:px-3 sm:text-xs"
+                    >
+                      عرض الملف الكامل
+                    </button>
                   </div>
                 </div>
               </article>
@@ -649,6 +607,140 @@ export default function BookAppointment() {
           </form>
         </section>
       </div>
+
+      {showDoctorProfile && selectedDoctor ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="doctor-profile-title"
+          onClick={() => setShowDoctorProfile(false)}
+        >
+          <section
+            className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:p-7"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-xl font-bold text-teal-800 ring-1 ring-teal-100">
+                  {selectedDoctor.avatar_url ? (
+                    <img
+                      src={selectedDoctor.avatar_url}
+                      alt={selectedDoctor.full_name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    selectedDoctor.full_name.slice(0, 1)
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h2
+                    id="doctor-profile-title"
+                    className="truncate text-xl font-black text-slate-950"
+                  >
+                    {selectedDoctor.full_name}
+                  </h2>
+                  <p className="mt-1 text-sm font-bold text-teal-700">
+                    {getSpecialtyMeta(selectedDoctor.specialty).icon}{' '}
+                    {getSpecialtyMeta(selectedDoctor.specialty).labelAr}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-amber-600">
+                    {selectedDoctorReviewStats?.reviewCount
+                      ? `⭐ ${selectedDoctorReviewStats.averageRating?.toFixed(1)} (${selectedDoctorReviewStats.reviewCount} تقييم)`
+                      : 'لا توجد تقييمات بعد'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDoctorProfile(false)}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-xl font-bold text-slate-700 transition hover:bg-slate-50"
+                aria-label="إغلاق"
+              >
+                ×
+              </button>
+            </div>
+
+            <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="font-bold text-slate-500">المدينة</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {selectedDoctor.city ?? 'غير متوفر'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-slate-500">العنوان</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {selectedDoctor.address ?? selectedDoctor.clinic_name ?? 'غير متوفر'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-slate-500">سنوات الخبرة</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {selectedDoctor.years_experience != null
+                    ? `${selectedDoctor.years_experience} سنة`
+                    : 'غير متوفر'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-slate-500">كلية الطب</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {selectedDoctor.medical_school ?? 'غير متوفر'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-slate-500">سنة التخرج</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {selectedDoctor.graduation_year ?? 'غير متوفر'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-slate-500">المستشفيات السابقة</dt>
+                <dd className="mt-1 font-semibold text-slate-950">
+                  {joinList(selectedDoctor.previous_hospitals)}
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="font-bold text-slate-500">نبذة مهنية</dt>
+                <dd className="mt-1 leading-7 text-slate-700">
+                  {selectedDoctor.biography ?? 'غير متوفر'}
+                </dd>
+              </div>
+            </dl>
+
+            {selectedDoctorReviews.some((review) => review.comment) ? (
+              <div className="mt-5 border-t border-slate-200 pt-5">
+                <h3 className="font-black text-slate-950">أحدث تعليقات المرضى</h3>
+                <div className="mt-3 grid gap-2">
+                  {selectedDoctorReviews
+                    .filter((review) => review.comment)
+                    .slice(0, 3)
+                    .map((review) => (
+                      <blockquote
+                        key={review.id}
+                        className="rounded-xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700"
+                      >
+                        <span className="font-bold text-amber-600">
+                          {'★'.repeat(review.rating)}
+                        </span>{' '}
+                        {review.comment}
+                      </blockquote>
+                    ))}
+                </div>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setShowDoctorProfile(false)}
+              className="mt-5 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
+            >
+              إغلاق
+            </button>
+          </section>
+        </div>
+      ) : null}
     </main>
   )
 }

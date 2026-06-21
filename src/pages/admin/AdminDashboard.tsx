@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import {
   deleteReviewAdmin,
-  getAdminStats,
-  getAppointmentsAdmin,
-  getDoctorsAdmin,
-  getPatientsAdmin,
+  getAdminDashboardFull,
   getPlatformAnalytics,
   getReviewsAdmin,
   toggleDoctorStatus,
@@ -48,8 +45,12 @@ const statusLabels: Record<string, string> = {
   cancelled: 'ملغي',
 }
 
+type DoctorStatusFilter = 'all' | 'active' | 'inactive'
+
 function formatRating(value: number | null) {
-  return value == null ? 'لا توجد' : value.toFixed(1)
+  const numericValue = Number(value)
+
+  return Number.isFinite(numericValue) ? numericValue.toFixed(1) : '0.0'
 }
 
 function getInitials(name: string) {
@@ -126,6 +127,8 @@ export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<AdminPlatformAnalytics | null>(null)
   const [appointmentFilter, setAppointmentFilter] =
     useState<AdminAppointmentFilter>('all')
+  const [doctorStatusFilter, setDoctorStatusFilter] =
+    useState<DoctorStatusFilter>('all')
   const [loading, setLoading] = useState(true)
   const [updatingDoctorId, setUpdatingDoctorId] = useState<string | null>(null)
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
@@ -162,69 +165,107 @@ export default function AdminDashboard() {
     ),
   )
 
+  const allDoctors = doctors
+  const activeDoctors = useMemo(
+    () => doctors.filter((doctor) => doctor.active === true),
+    [doctors],
+  )
+  const inactiveDoctors = useMemo(
+    () => doctors.filter((doctor) => doctor.active !== true),
+    [doctors],
+  )
+  const filteredDoctors = useMemo(() => {
+    if (doctorStatusFilter === 'active') {
+      return activeDoctors
+    }
+
+    if (doctorStatusFilter === 'inactive') {
+      return inactiveDoctors
+    }
+
+    return allDoctors
+  }, [activeDoctors, allDoctors, doctorStatusFilter, inactiveDoctors])
+
   const overviewCards = useMemo(
     () => [
       {
-        label: '👥 إجمالي المرضى',
-        value: stats?.totalPatients ?? 0,
-        color: 'text-slate-950',
-      },
-      {
         label: '👨‍⚕️ إجمالي الأطباء',
-        value: stats?.totalDoctors ?? 0,
+        value: loading ? 0 : allDoctors.length,
         color: 'text-teal-700',
       },
       {
-        label: '📅 إجمالي المواعيد',
-        value: stats?.totalAppointments ?? 0,
-        color: 'text-slate-950',
+        label: '✅ الأطباء المفعلون',
+        value: loading ? 0 : activeDoctors.length,
+        color: 'text-green-700',
       },
       {
-        label: '⭐ إجمالي التقييمات',
-        value: stats?.totalReviews ?? 0,
-        color: 'text-amber-600',
+        label: '⛔ الأطباء غير المفعلين',
+        value: loading ? 0 : inactiveDoctors.length,
+        color: 'text-orange-600',
+      },
+      {
+        label: '👥 إجمالي المرضى',
+        value: stats ? stats.totalPatients : '...',
+        color: 'text-indigo-700',
+      },
+      {
+        label: '📅 إجمالي المواعيد',
+        value: stats ? stats.totalAppointments : '...',
+        color: 'text-blue-700',
       },
       {
         label: '🔔 إجمالي الإشعارات',
-        value: stats?.totalNotifications ?? 0,
-        color: 'text-slate-950',
-      },
-      {
-        label: '📊 متوسط تقييم المنصة',
-        value: stats ? formatRating(stats.averagePlatformRating) : '...',
-        color: 'text-emerald-700',
+        value: stats ? stats.totalNotifications : '...',
+        color: 'text-amber-600',
       },
     ],
-    [stats],
+    [activeDoctors.length, allDoctors.length, inactiveDoctors.length, loading, stats],
   )
-
   const loadDashboard = async (filter: AdminAppointmentFilter) => {
     setLoading(true)
     setErrorMessage('')
 
     try {
-      const [
-        nextStats,
-        nextDoctors,
-        nextPatients,
-        nextAppointments,
-        nextReviews,
-        nextAnalytics,
-      ] = await Promise.all([
-        getAdminStats(),
-        getDoctorsAdmin(),
-        getPatientsAdmin(),
-        getAppointmentsAdmin(filter),
-        getReviewsAdmin(),
-        getPlatformAnalytics(),
-      ])
+      const results = await Promise.allSettled(
+        [
+          getAdminDashboardFull(filter),
+          getReviewsAdmin(),
+          getPlatformAnalytics(),
+        ] as const,
+      )
 
-      setStats(nextStats)
-      setDoctors(nextDoctors)
-      setPatients(nextPatients)
-      setAppointments(nextAppointments)
-      setReviews(nextReviews)
-      setAnalytics(nextAnalytics)
+      const [dashboardResult, reviewsResult, analyticsResult] = results
+
+      if (dashboardResult.status === 'fulfilled') {
+        setStats(dashboardResult.value.stats)
+        setDoctors(dashboardResult.value.doctors)
+        setPatients(dashboardResult.value.patients)
+        setAppointments(dashboardResult.value.appointments)
+      } else {
+        console.error('Failed to load admin dashboard RPC', dashboardResult.reason)
+      }
+
+      if (reviewsResult.status === 'fulfilled') {
+        setReviews(reviewsResult.value)
+      } else {
+        console.error('Failed to load admin reviews', reviewsResult.reason)
+      }
+
+      if (analyticsResult.status === 'fulfilled') {
+        setAnalytics(analyticsResult.value)
+      } else {
+        console.error('Failed to load admin analytics', analyticsResult.reason)
+      }
+
+      const rejectedResult = results.find((result) => result.status === 'rejected')
+
+      if (rejectedResult?.status === 'rejected') {
+        setErrorMessage(
+          rejectedResult.reason instanceof Error
+            ? rejectedResult.reason.message
+            : 'تعذر تحميل بعض بيانات لوحة الإدارة.',
+        )
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -389,7 +430,7 @@ export default function AdminDashboard() {
               {overviewCards.map((card) => (
                 <article
                   key={card.label}
-                  className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                  className="flex h-full min-h-28 flex-col justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
                 >
                   <p className="text-sm font-semibold text-slate-600">
                     {card.label}
@@ -410,6 +451,44 @@ export default function AdminDashboard() {
           open={openSections.doctors}
           onToggle={() => toggleSection('doctors')}
         >
+          <div className="mb-4 flex flex-wrap gap-2">
+            {[
+              { value: 'all' as const, label: 'الكل', count: allDoctors.length },
+              {
+                value: 'active' as const,
+                label: 'المفعلون',
+                count: activeDoctors.length,
+              },
+              {
+                value: 'inactive' as const,
+                label: 'غير المفعلين',
+                count: inactiveDoctors.length,
+              },
+            ].map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => setDoctorStatusFilter(filter.value)}
+                className={`inline-flex min-h-9 items-center gap-2 rounded-xl px-4 text-sm font-bold transition ${
+                  doctorStatusFilter === filter.value
+                    ? 'bg-teal-700 text-white shadow-sm'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <span>{filter.label}</span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    doctorStatusFilter === filter.value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {loading ? 0 : filter.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
           <div className="overflow-hidden rounded-lg border border-slate-200">
             <div className="hidden gap-px bg-slate-200 text-sm lg:grid lg:grid-cols-[0.8fr_1.4fr_1fr_1fr_0.8fr_0.8fr_0.9fr_1.4fr]">
               {['الصورة', 'الاسم', 'التخصص', 'العيادة', 'الحالة', 'التقييم', 'المواعيد', 'الإجراءات'].map(
@@ -422,7 +501,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="divide-y divide-slate-200">
-              {doctors.map((doctor) => (
+              {filteredDoctors.map((doctor) => (
                 <article
                   key={doctor.id}
                   className="grid gap-4 bg-white p-4 text-sm lg:grid-cols-[0.8fr_1.4fr_1fr_1fr_0.8fr_0.8fr_0.9fr_1.4fr] lg:items-center lg:gap-px lg:p-0"
@@ -491,6 +570,12 @@ export default function AdminDashboard() {
                   </div>
                 </article>
               ))}
+
+              {!loading && filteredDoctors.length === 0 ? (
+                <p className="bg-white px-4 py-8 text-center text-sm font-semibold text-slate-500">
+                  لا يوجد أطباء ضمن هذا التصنيف
+                </p>
+              ) : null}
             </div>
           </div>
         </SectionShell>

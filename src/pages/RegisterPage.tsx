@@ -281,7 +281,7 @@ export default function RegisterPage() {
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 pr-11 text-sm text-slate-950 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 sm:h-14 sm:py-3 sm:pr-12"
-                    placeholder="اختياري"
+                    placeholder="أدخل رقم الهاتف"
                     autoComplete="tel"
                   />
                 </div>

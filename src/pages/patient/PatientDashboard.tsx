@@ -19,6 +19,12 @@ import {
 } from '../../services/doctors'
 import { getUnreadNotificationsCount } from '../../services/notifications'
 import {
+  getPushNotificationStatus,
+  subscribeUserToPush,
+  unsubscribeUserFromPush,
+  type PushNotificationStatus,
+} from '../../services/pushNotifications'
+import {
   getDoctorReviews,
   getDoctorReviewStats,
   type DoctorReview,
@@ -152,6 +158,10 @@ export default function PatientDashboard() {
   const [reviewsError, setReviewsError] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [pushStatus, setPushStatus] =
+    useState<PushNotificationStatus>('disabled')
+  const [isUpdatingPush, setIsUpdatingPush] = useState(false)
+  const [pushMessage, setPushMessage] = useState('')
   const selectedBookingSlot = daySlots.find((slot) => slot.slot_start === bookingTime)
 
   useEffect(() => {
@@ -392,6 +402,24 @@ export default function PatientDashboard() {
     }
   }, [])
 
+  useEffect(() => {
+    let isMounted = true
+
+    const loadPushStatus = async () => {
+      const status = await getPushNotificationStatus()
+
+      if (isMounted) {
+        setPushStatus(status)
+      }
+    }
+
+    void loadPushStatus()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const upcomingAppointments = useMemo(() => {
     const now = new Date()
 
@@ -410,6 +438,36 @@ export default function PatientDashboard() {
 
   const emailUsername = user?.email?.split('@')[0] ?? ''
   const patientDisplayName = profile?.full_name?.trim() || emailUsername || 'مريض'
+
+  const handlePushNotifications = async () => {
+    setIsUpdatingPush(true)
+    setPushMessage('')
+
+    try {
+      if (pushStatus === 'enabled') {
+        await unsubscribeUserFromPush()
+        setPushStatus('disabled')
+        setPushMessage('تم إيقاف إشعارات الهاتف.')
+        return
+      }
+
+      await subscribeUserToPush()
+      setPushStatus('enabled')
+      setPushMessage('تم تفعيل إشعارات الهاتف بنجاح.')
+    } catch (error) {
+      const status = await getPushNotificationStatus()
+      setPushStatus(status)
+      setPushMessage(
+        status === 'denied'
+          ? 'تم رفض الإشعارات من المتصفح. يمكنك السماح بها من إعدادات الموقع.'
+          : error instanceof Error
+            ? error.message
+            : 'تعذر تحديث إعدادات إشعارات الهاتف.',
+      )
+    } finally {
+      setIsUpdatingPush(false)
+    }
+  }
 
   const handleSignOut = async () => {
     setShowProfileMenu(false)
@@ -713,6 +771,69 @@ export default function PatientDashboard() {
               <span>{action.label}</span>
             </button>
           ))}
+        </section>
+
+        <section className="flex flex-col gap-4 rounded-2xl border border-teal-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-xl"
+              aria-hidden="true"
+            >
+              🔔
+            </span>
+            <div>
+              <h2 className="text-base font-black text-slate-950">
+                إشعارات الهاتف
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-slate-600">
+                استقبل تأكيدات المواعيد مباشرة على هاتفك أو متصفحك.
+              </p>
+              <p
+                className={`mt-2 text-xs font-black ${
+                  pushStatus === 'enabled'
+                    ? 'text-emerald-700'
+                    : pushStatus === 'denied'
+                      ? 'text-rose-700'
+                      : 'text-slate-500'
+                }`}
+              >
+                الحالة:{' '}
+                {pushStatus === 'enabled'
+                  ? 'مفعلة'
+                  : pushStatus === 'denied'
+                    ? 'مرفوضة من المتصفح'
+                    : pushStatus === 'unsupported'
+                      ? 'غير مدعومة في هذا المتصفح'
+                      : 'غير مفعلة'}
+              </p>
+              {pushMessage ? (
+                <p className="mt-2 text-xs font-bold text-slate-600" role="status">
+                  {pushMessage}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handlePushNotifications}
+            disabled={
+              isUpdatingPush ||
+              pushStatus === 'denied' ||
+              pushStatus === 'unsupported'
+            }
+            className={`inline-flex min-h-11 w-full items-center justify-center rounded-xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${
+              pushStatus === 'enabled'
+                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                : 'bg-teal-700 text-white shadow-sm hover:bg-teal-800'
+            }`}
+          >
+            {isUpdatingPush
+              ? 'جاري التحديث...'
+              : pushStatus === 'enabled'
+                ? 'إيقاف إشعارات الهاتف'
+                : 'تفعيل إشعارات الهاتف'}
+          </button>
         </section>
 
         <section className="rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 to-white p-5 shadow-sm sm:p-6">

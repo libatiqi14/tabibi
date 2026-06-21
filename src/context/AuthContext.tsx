@@ -71,13 +71,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return null
     }
 
+    setUser(nextUser)
     const nextProfile = await fetchUserProfile(nextUser)
 
     if (authRequestIdRef.current !== requestId) {
       return null
     }
 
-    setUser(nextUser)
     setProfile(nextProfile)
     console.log('PROFILE', nextProfile)
     console.log('ROLE', nextProfile.role)
@@ -123,6 +123,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+
       authChangeTimer = window.setTimeout(() => {
         void (async () => {
           if (!isMounted) {

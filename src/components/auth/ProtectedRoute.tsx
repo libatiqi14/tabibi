@@ -16,7 +16,10 @@ function getDashboardPath(role: UserRole) {
   return role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'
 }
 
-export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  children,
+  allowedRoles,
+}: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
 
   console.log('AUTH USER', user)
@@ -25,9 +28,15 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
 
   if (loading) {
     return (
-      <main className="grid min-h-screen place-items-center bg-slate-50 px-4" dir="rtl" lang="ar">
+      <main
+        className="grid min-h-screen place-items-center bg-slate-50 px-4"
+        dir="rtl"
+        lang="ar"
+      >
         <div className="rounded-lg border border-slate-200 bg-white px-6 py-5 text-center shadow-sm">
-          <p className="text-sm font-semibold text-slate-700">جاري تحميل الحساب...</p>
+          <p className="text-sm font-semibold text-slate-700">
+            جاري تحميل الحساب...
+          </p>
         </div>
       </main>
     )

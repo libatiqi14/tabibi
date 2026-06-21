@@ -1,19 +1,12 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
 import type { UserRole } from '../../context/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
+import RoleBasedRoute from './RoleBasedRoute'
 
 type ProtectedRouteProps = {
   children: ReactNode
   allowedRoles?: UserRole[]
-}
-
-function getDashboardPath(role: UserRole) {
-  if (role === 'admin') {
-    return '/admin'
-  }
-
-  return role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard'
 }
 
 export default function ProtectedRoute({
@@ -22,9 +15,9 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth()
 
-  console.log('AUTH USER', user)
-  console.log('PROFILE', profile)
-  console.log('ROLE', profile?.role)
+  console.log('Auth loading', loading)
+  console.log('User', user)
+  console.log('Profile', profile)
 
   if (loading) {
     return (
@@ -42,12 +35,16 @@ export default function ProtectedRoute({
     )
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return <Navigate to="/login" replace />
   }
 
-  if (allowedRoles && !allowedRoles.includes(profile.role)) {
-    return <Navigate to={getDashboardPath(profile.role)} replace />
+  if (allowedRoles) {
+    return (
+      <RoleBasedRoute allowedRoles={allowedRoles}>
+        {children}
+      </RoleBasedRoute>
+    )
   }
 
   return children

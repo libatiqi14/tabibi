@@ -22,6 +22,7 @@ type AuthContextValue = {
   user: User | null
   profile: UserProfile | null
   loading: boolean
+  profileLoading: boolean
   signIn: (email: string, password: string) => Promise<SignInResult>
   signOut: () => Promise<void>
 }
@@ -55,41 +56,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const authRequestIdRef = useRef(0)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const profileRequestIdRef = useRef(0)
 
-  const applyAuthenticatedUser = useCallback(async (nextUser: User | null) => {
-    const requestId = authRequestIdRef.current + 1
-    authRequestIdRef.current = requestId
-
-    console.log('AUTH USER', nextUser)
+  const loadProfile = useCallback(async (nextUser: User | null) => {
+    const requestId = profileRequestIdRef.current + 1
+    profileRequestIdRef.current = requestId
 
     if (!nextUser) {
-      setUser(null)
       setProfile(null)
-      console.log('PROFILE', null)
-      console.log('ROLE', undefined)
+      setProfileLoading(false)
       return null
     }
 
-    setUser(nextUser)
-    const nextProfile = await fetchUserProfile(nextUser)
+    setProfileLoading(true)
 
-    if (authRequestIdRef.current !== requestId) {
-      return null
+    try {
+      const nextProfile = await fetchUserProfile(nextUser)
+
+      if (profileRequestIdRef.current !== requestId) {
+        return null
+      }
+
+      setProfile(nextProfile)
+      console.log('Profile', nextProfile)
+      console.log('ROLE', nextProfile.role)
+      return nextProfile
+    } catch (error) {
+      if (profileRequestIdRef.current === requestId) {
+        setProfile(null)
+      }
+
+      throw error
+    } finally {
+      if (profileRequestIdRef.current === requestId) {
+        setProfileLoading(false)
+      }
     }
-
-    setProfile(nextProfile)
-    console.log('PROFILE', nextProfile)
-    console.log('ROLE', nextProfile.role)
-
-    return nextProfile
   }, [])
 
   useEffect(() => {
     let isMounted = true
-    let authChangeTimer: number | undefined
 
-    const restoreSession = async () => {
+    const initializeAuth = async () => {
       setLoading(true)
 
       try {
@@ -102,66 +111,84 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error(error.message)
         }
 
-        if (isMounted) {
-          await applyAuthenticatedUser(session?.user ?? null)
+        if (!isMounted) {
+          return
+        }
+
+        console.log('Initial session', session)
+        const initialUser = session?.user ?? null
+        setUser(initialUser)
+        console.log('User', initialUser)
+        setLoading(false)
+        console.log('Auth loading', false)
+
+        try {
+          await loadProfile(initialUser)
+        } catch (error) {
+          console.error('PROFILE RESTORE ERROR', error)
         }
       } catch (error) {
         if (isMounted) {
           console.error('AUTH RESTORE ERROR', error)
           setUser(null)
           setProfile(null)
-        }
-      } finally {
-        if (isMounted) {
+          setProfileLoading(false)
           setLoading(false)
+          console.log('Auth loading', false)
+          console.log('User', null)
+          console.log('Profile', null)
         }
       }
     }
 
-    void restoreSession()
+    void initializeAuth()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted || event === 'INITIAL_SESSION') {
+        return
+      }
 
-      authChangeTimer = window.setTimeout(() => {
-        void (async () => {
-          if (!isMounted) {
-            return
-          }
+      if (event === 'SIGNED_OUT') {
+        profileRequestIdRef.current += 1
+        setUser(null)
+        setProfile(null)
+        setProfileLoading(false)
+        console.log('User', null)
+        console.log('Profile', null)
+        return
+      }
 
-          setLoading(true)
+      if (!session?.user) {
+        return
+      }
 
-          try {
-            await applyAuthenticatedUser(session?.user ?? null)
-          } catch (error) {
-            console.error('AUTH STATE CHANGE ERROR', error)
-            setUser(null)
-            setProfile(null)
-          } finally {
-            if (isMounted) {
-              setLoading(false)
-            }
-          }
-        })()
+      const nextUser = session.user
+      setUser(nextUser)
+      console.log('User', nextUser)
+
+      window.setTimeout(() => {
+        if (!isMounted) {
+          return
+        }
+
+        void loadProfile(nextUser).catch((error) => {
+          console.error('AUTH PROFILE CHANGE ERROR', error)
+        })
       }, 0)
     })
 
     return () => {
       isMounted = false
-
-      if (authChangeTimer) {
-        window.clearTimeout(authChangeTimer)
-      }
-
       subscription.unsubscribe()
     }
-  }, [applyAuthenticatedUser])
+  }, [loadProfile])
 
   const signIn = useCallback(
     async (email: string, password: string) => {
       setLoading(true)
+      console.log('Auth loading', true)
 
       try {
         const {
@@ -180,19 +207,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
           throw new Error('Sign in succeeded but no user was returned.')
         }
 
-        const signedInProfile = await fetchUserProfile(signedInUser)
         setUser(signedInUser)
+        console.log('User', signedInUser)
+        setProfileLoading(true)
+        const signedInProfile = await fetchUserProfile(signedInUser)
         setProfile(signedInProfile)
-        console.log('AUTH USER', signedInUser)
-        console.log('PROFILE', signedInProfile)
-        console.log('ROLE', signedInProfile.role)
+        setProfileLoading(false)
 
         return {
           user: signedInUser,
           profile: signedInProfile,
         }
       } finally {
+        setProfileLoading(false)
         setLoading(false)
+        console.log('Auth loading', false)
       }
     },
     [],
@@ -200,6 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = useCallback(async () => {
     setLoading(true)
+    console.log('Auth loading', true)
 
     try {
       const { error } = await supabase.auth.signOut()
@@ -208,21 +238,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(error.message)
       }
 
-      await applyAuthenticatedUser(null)
+      profileRequestIdRef.current += 1
+      setUser(null)
+      setProfile(null)
+      setProfileLoading(false)
+      console.log('User', null)
+      console.log('Profile', null)
     } finally {
       setLoading(false)
+      console.log('Auth loading', false)
     }
-  }, [applyAuthenticatedUser])
+  }, [])
 
   const value = useMemo(
     () => ({
       user,
       profile,
       loading,
+      profileLoading,
       signIn,
       signOut,
     }),
-    [user, profile, loading, signIn, signOut],
+    [user, profile, loading, profileLoading, signIn, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

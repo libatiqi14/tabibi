@@ -41,11 +41,18 @@ export function isPushSupported(): boolean {
 }
 
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  console.log('Notification supported:', 'Notification' in window)
+
   if (!isPushSupported()) {
     throw new Error('Push notifications are not supported by this browser.')
   }
 
-  return Notification.requestPermission()
+  console.log('Current permission:', Notification.permission)
+
+  const permission = await Notification.requestPermission()
+  console.log('Permission result:', permission)
+
+  return permission
 }
 
 export async function saveSubscriptionToSupabase(
@@ -97,7 +104,7 @@ export async function subscribeUserToPush(): Promise<PushSubscription> {
       : await requestNotificationPermission()
 
   if (permission !== 'granted') {
-    throw new Error('Notification permission was not granted.')
+    throw new Error(`Notification permission was not granted: ${permission}`)
   }
 
   const registration = await navigator.serviceWorker.ready

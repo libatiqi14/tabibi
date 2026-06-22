@@ -4,11 +4,9 @@ import webpush from 'npm:web-push@3.6.7'
 
 type PushRequest = {
   user_id?: string
-  appointment_id?: string
   title?: string
   body?: string
   url?: string
-  role?: 'patient' | 'doctor' | 'admin'
 }
 
 type PushSubscriptionRow = {
@@ -16,6 +14,14 @@ type PushSubscriptionRow = {
   endpoint: string
   p256dh: string
   auth: string
+}
+
+type PushResult = {
+  subscription_id: string
+  success: boolean
+  status_code: number | null
+  deleted: boolean
+  error: string | null
 }
 
 const corsHeaders = {
@@ -29,8 +35,12 @@ const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
 const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
 const vapidSubject = Deno.env.get('VAPID_SUBJECT')
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase Edge Function environment variables.')
+if (!supabaseUrl) {
+  throw new Error('Missing SUPABASE_URL environment variable.')
+}
+
+if (!serviceRoleKey) {
+  throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable.')
 }
 
 if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
@@ -38,7 +48,10 @@ if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
 })
 
 webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
@@ -46,62 +59,24 @@ webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    },
   })
 }
 
-async function authorizeRequest(
-  authorization: string,
-  payload: Required<Pick<PushRequest, 'user_id' | 'appointment_id'>>,
-) {
-  const token = authorization.replace(/^Bearer\s+/i, '')
-  const { data: userData, error: userError } = await supabase.auth.getUser(token)
-
-  if (userError || !userData.user) {
-    throw new Error('Unauthorized request.')
+function getPushError(error: unknown) {
+  const pushError = error as {
+    statusCode?: number
+    message?: string
+    body?: string
   }
 
-  const callerId = userData.user.id
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', callerId)
-    .single()
-
-  if (profileError) {
-    throw new Error(profileError.message)
-  }
-
-  if (profile.role === 'admin') {
-    return
-  }
-
-  if (profile.role !== 'doctor') {
-    throw new Error('Only a doctor or admin can send appointment push notifications.')
-  }
-
-  const { data: appointment, error: appointmentError } = await supabase
-    .from('appointments')
-    .select('patient_id, doctor_id')
-    .eq('id', payload.appointment_id)
-    .single()
-
-  if (appointmentError) {
-    throw new Error(appointmentError.message)
-  }
-
-  const { data: doctor, error: doctorError } = await supabase
-    .from('doctors')
-    .select('user_id')
-    .eq('id', appointment.doctor_id)
-    .single()
-
-  if (
-    doctorError ||
-    doctor?.user_id !== callerId ||
-    appointment.patient_id !== payload.user_id
-  ) {
-    throw new Error('You cannot send a push notification for this appointment.')
+  return {
+    statusCode:
+      typeof pushError.statusCode === 'number' ? pushError.statusCode : null,
+    message: pushError.body || pushError.message || 'Unknown Web Push error.',
   }
 }
 
@@ -117,27 +92,17 @@ serve(async (request) => {
   try {
     const payload = (await request.json()) as PushRequest
 
-    if (
-      !payload.user_id ||
-      !payload.appointment_id ||
-      !payload.title ||
-      !payload.body
-    ) {
+    if (!payload.user_id || !payload.title || !payload.body) {
       return jsonResponse(
-        { error: 'user_id, appointment_id, title, and body are required.' },
+        { error: 'user_id, title, and body are required.' },
         400,
       )
     }
 
-    const authorization = request.headers.get('Authorization')
-
-    if (!authorization) {
-      return jsonResponse({ error: 'Missing Authorization header.' }, 401)
-    }
-
-    await authorizeRequest(authorization, {
-      user_id: payload.user_id,
-      appointment_id: payload.appointment_id,
+    console.log('Fetching push subscriptions', {
+      userId: payload.user_id,
+      title: payload.title,
+      url: payload.url ?? '/patient',
     })
 
     const { data, error } = await supabase
@@ -146,21 +111,27 @@ serve(async (request) => {
       .eq('user_id', payload.user_id)
 
     if (error) {
+      console.error('Failed to fetch push subscriptions', error)
       throw new Error(error.message)
     }
 
     const subscriptions = (data ?? []) as PushSubscriptionRow[]
+
+    console.log('Push subscriptions found', {
+      userId: payload.user_id,
+      count: subscriptions.length,
+    })
+
     const notificationPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
-      url: payload.url ?? '/patient/dashboard',
-      role: payload.role ?? 'patient',
+      url: payload.url ?? '/patient',
     })
 
-    const results = await Promise.allSettled(
-      subscriptions.map(async (subscription) => {
+    const results = await Promise.all(
+      subscriptions.map(async (subscription): Promise<PushResult> => {
         try {
-          await webpush.sendNotification(
+          const response = await webpush.sendNotification(
             {
               endpoint: subscription.endpoint,
               keys: {
@@ -171,42 +142,93 @@ serve(async (request) => {
             notificationPayload,
           )
 
-          return subscription.id
-        } catch (error) {
-          const pushError = error as { statusCode?: number; message?: string }
+          console.log('Push notification sent', {
+            subscriptionId: subscription.id,
+            statusCode: response.statusCode,
+          })
 
-          if (pushError.statusCode === 404 || pushError.statusCode === 410) {
-            await supabase
+          return {
+            subscription_id: subscription.id,
+            success: true,
+            status_code: response.statusCode ?? null,
+            deleted: false,
+            error: null,
+          }
+        } catch (error) {
+          const pushError = getPushError(error)
+          const shouldDelete =
+            pushError.statusCode === 400 ||
+            pushError.statusCode === 404 ||
+            pushError.statusCode === 410
+
+          console.error('Push notification failed', {
+            subscriptionId: subscription.id,
+            statusCode: pushError.statusCode,
+            error: pushError.message,
+            deletingSubscription: shouldDelete,
+          })
+
+          let deleted = false
+
+          if (shouldDelete) {
+            const { error: deleteError } = await supabase
               .from('push_subscriptions')
               .delete()
               .eq('id', subscription.id)
+
+            if (deleteError) {
+              console.error('Failed to delete invalid push subscription', {
+                subscriptionId: subscription.id,
+                error: deleteError.message,
+              })
+            } else {
+              deleted = true
+              console.log('Invalid push subscription deleted', {
+                subscriptionId: subscription.id,
+              })
+            }
           }
 
-          console.error('Push delivery failed', {
-            subscriptionId: subscription.id,
-            statusCode: pushError.statusCode,
-            message: pushError.message,
-          })
-          throw error
+          return {
+            subscription_id: subscription.id,
+            success: false,
+            status_code: pushError.statusCode,
+            deleted,
+            error: pushError.message,
+          }
         }
       }),
     )
 
-    const sent = results.filter((result) => result.status === 'fulfilled').length
+    const sent = results.filter((result) => result.success).length
     const failed = results.length - sent
 
-    console.log('Push notification delivery complete', {
+    console.log('Push notification request complete', {
       userId: payload.user_id,
-      subscriptions: subscriptions.length,
       sent,
       failed,
     })
 
-    return jsonResponse({ subscriptions: subscriptions.length, sent, failed })
+    return jsonResponse({
+      sent,
+      failed,
+      results,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown push error.'
-    const status = message === 'Unauthorized request.' ? 401 : 500
-    console.error('send-push-notification failed', error)
-    return jsonResponse({ error: message }, status)
+
+    console.error('send-push-notification failed', {
+      error: message,
+    })
+
+    return jsonResponse(
+      {
+        error: message,
+        sent: 0,
+        failed: 0,
+        results: [],
+      },
+      500,
+    )
   }
 })

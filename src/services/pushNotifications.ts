@@ -109,12 +109,34 @@ export async function subscribeUserToPush(): Promise<PushSubscription> {
 
   const registration = await navigator.serviceWorker.ready
   const existingSubscription = await registration.pushManager.getSubscription()
-  const subscription =
-    existingSubscription ??
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    }))
+  let subscription = existingSubscription
+
+  if (!subscription) {
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey)
+
+    console.log('Notification permission:', Notification.permission)
+    console.log('Service worker ready:', registration)
+    console.log('VAPID public key length:', vapidPublicKey?.length)
+    console.log('Application server key:', applicationServerKey)
+
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      })
+    } catch (error) {
+      const pushError = error as { name?: string; message?: string }
+
+      console.error('Push subscription failed:', error)
+      console.error('Push subscription error name:', pushError?.name)
+      console.error('Push subscription error message:', pushError?.message)
+
+      const errorName = pushError?.name || 'PushSubscriptionError'
+      const errorMessage = pushError?.message || 'Unknown push subscription error'
+
+      throw new Error(`${errorName} - ${errorMessage}`)
+    }
+  }
 
   await saveSubscriptionToSupabase(subscription)
 

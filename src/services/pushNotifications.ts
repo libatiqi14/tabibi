@@ -6,17 +6,16 @@ export type PushNotificationStatus =
   | 'denied'
   | 'unsupported'
 
-function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
-  const padding = '='.repeat((4 - (value.length % 4)) % 4)
-  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const decoded = window.atob(base64)
-  const bytes = new Uint8Array(new ArrayBuffer(decoded.length))
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+  const rawData = window.atob(base64)
 
-  for (let index = 0; index < decoded.length; index += 1) {
-    bytes[index] = decoded.charCodeAt(index)
-  }
-
-  return bytes
+  return Uint8Array.from(
+    [...rawData].map((character) => character.charCodeAt(0)),
+  )
 }
 
 function getSubscriptionKeys(subscription: PushSubscription) {
@@ -107,40 +106,47 @@ export async function subscribeUserToPush(): Promise<PushSubscription> {
     throw new Error(`Notification permission was not granted: ${permission}`)
   }
 
-  const registration = await navigator.serviceWorker.ready
-  const existingSubscription = await registration.pushManager.getSubscription()
-  let subscription = existingSubscription
+  const currentRegistration = await navigator.serviceWorker.getRegistration()
 
-  if (!subscription) {
-    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey)
-
-    console.log('Notification permission:', Notification.permission)
-    console.log('Service worker ready:', registration)
-    console.log('VAPID public key length:', vapidPublicKey?.length)
-    console.log('Application server key:', applicationServerKey)
-
-    try {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      })
-    } catch (error) {
-      const pushError = error as { name?: string; message?: string }
-
-      console.error('Push subscription failed:', error)
-      console.error('Push subscription error name:', pushError?.name)
-      console.error('Push subscription error message:', pushError?.message)
-
-      const errorName = pushError?.name || 'PushSubscriptionError'
-      const errorMessage = pushError?.message || 'Unknown push subscription error'
-
-      throw new Error(`${errorName} - ${errorMessage}`)
-    }
+  if (!currentRegistration) {
+    await navigator.serviceWorker.register('/sw.js')
   }
 
-  await saveSubscriptionToSupabase(subscription)
+  const registration = await navigator.serviceWorker.ready
+  const existing = await registration.pushManager.getSubscription()
 
-  return subscription
+  console.log('SW ready:', registration)
+  console.log('Existing push subscription:', existing)
+  console.log('VAPID key length:', vapidPublicKey.length)
+
+  if (existing) {
+    await saveSubscriptionToSupabase(existing)
+    return existing
+  }
+
+  const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey)
+
+  try {
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    })
+
+    await saveSubscriptionToSupabase(subscription)
+
+    return subscription
+  } catch (error) {
+    const pushError = error as { name?: string; message?: string }
+
+    console.error('Push subscription failed:', error)
+    console.error('Push subscription error name:', pushError?.name)
+    console.error('Push subscription error message:', pushError?.message)
+
+    const errorName = pushError?.name || 'PushSubscriptionError'
+    const errorMessage = pushError?.message || 'Unknown push subscription error'
+
+    throw new Error(`${errorName} - ${errorMessage}`)
+  }
 }
 
 export async function unsubscribeUserFromPush(): Promise<void> {

@@ -38,12 +38,16 @@
 html {
   min-height: 100%;
   background: #f8fafc;
+  direction: rtl;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  direction: rtl;
+  text-align: right;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top right, rgba(20, 184, 166, 0.1), transparent 30rem),
     linear-gradient(180deg, #f8fafc 0%, #f0fdfa 100%);
@@ -75,6 +79,32 @@ a {
 
 #root {
   min-height: 100vh;
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] input,
+[dir="rtl"] select,
+[dir="rtl"] textarea {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] button,
+[dir="rtl"] a {
+  direction: rtl;
+}
+
+[dir="ltr"],
+[dir="ltr"] input,
+[dir="ltr"] select,
+[dir="ltr"] textarea {
+  direction: ltr;
 }
 
 main[dir="rtl"] {

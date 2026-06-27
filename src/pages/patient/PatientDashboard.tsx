@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import NotificationsPanel from '../../components/notifications/NotificationsPanel'
 import { useAuth } from '../../hooks/useAuth'
@@ -68,9 +68,9 @@ function getSlotTime(slotStart: string) {
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
-    scheduled: 'مجدول',
-    completed: 'مكتمل',
-    cancelled: 'ملغي',
+    scheduled: 'Ù…Ø¬Ø¯ÙˆÙ„',
+    completed: 'Ù…ÙƒØªÙ…Ù„',
+    cancelled: 'Ù…Ù„ØºÙŠ',
   }
 
   return labels[status] ?? status
@@ -92,7 +92,7 @@ const getDoctorInitials = (fullName: string) =>
     .toUpperCase()
 
 const formatList = (items?: string[] | null) =>
-  items && items.length > 0 ? items.join('، ') : 'غير متوفر'
+  items && items.length > 0 ? items.join('ØŒ ') : 'ØºÙŠØ± Ù…ØªÙˆÙØ±'
 
 function getBookingErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : ''
@@ -102,24 +102,24 @@ function getBookingErrorMessage(error: unknown) {
     normalizedMessage.includes('duplicate key') ||
     normalizedMessage.includes('appointments_no_double_booking_idx')
   ) {
-    return 'هذا الموعد محجوز بالفعل. يرجى اختيار وقت آخر.'
+    return 'Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆØ¹Ø¯ Ù…Ø­Ø¬ÙˆØ² Ø¨Ø§Ù„ÙØ¹Ù„. ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ÙˆÙ‚Øª Ø¢Ø®Ø±.'
   }
 
   if (
     normalizedMessage.includes('doctor is unavailable on this day') ||
     normalizedMessage.includes('unavailable on this day')
   ) {
-    return 'الطبيب غير متاح في هذا اليوم. يرجى اختيار تاريخ آخر.'
+    return 'Ø§Ù„Ø·Ø¨ÙŠØ¨ ØºÙŠØ± Ù…ØªØ§Ø­ ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙŠÙˆÙ…. ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ØªØ§Ø±ÙŠØ® Ø¢Ø®Ø±.'
   }
 
   if (
     normalizedMessage.includes('doctor_not_available') ||
     normalizedMessage.includes('working hours')
   ) {
-    return 'الطبيب غير متاح في هذا الوقت. يرجى اختيار وقت آخر.'
+    return 'Ø§Ù„Ø·Ø¨ÙŠØ¨ ØºÙŠØ± Ù…ØªØ§Ø­ ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙˆÙ‚Øª. ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ÙˆÙ‚Øª Ø¢Ø®Ø±.'
   }
 
-  return message || 'تعذر حجز الموعد. يرجى المحاولة مرة أخرى.'
+  return message || 'ØªØ¹Ø°Ø± Ø­Ø¬Ø² Ø§Ù„Ù…ÙˆØ¹Ø¯. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.'
 }
 
 export default function PatientDashboard() {
@@ -281,7 +281,7 @@ export default function PatientDashboard() {
           const message =
             error instanceof Error
               ? error.message
-              : 'تعذر تحميل الأطباء. يرجى المحاولة مرة أخرى.'
+              : 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.'
           setDoctorsDirectoryError(message)
         }
       } finally {
@@ -328,7 +328,7 @@ export default function PatientDashboard() {
           const message =
             error instanceof Error
               ? error.message
-              : 'تعذر تحميل الأوقات المتاحة. يرجى المحاولة مرة أخرى.'
+              : 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£ÙˆÙ‚Ø§Øª Ø§Ù„Ù…ØªØ§Ø­Ø©. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.'
           setBookingError(message)
         }
       } finally {
@@ -363,7 +363,7 @@ export default function PatientDashboard() {
           const message =
             error instanceof Error
               ? error.message
-              : 'تعذر تحميل المواعيد. يرجى المحاولة مرة أخرى.'
+              : 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.'
           setErrorMessage(message)
         }
       } finally {
@@ -437,7 +437,7 @@ export default function PatientDashboard() {
   }, [appointments])
 
   const emailUsername = user?.email?.split('@')[0] ?? ''
-  const patientDisplayName = profile?.full_name?.trim() || emailUsername || 'مريض'
+  const patientDisplayName = profile?.full_name?.trim() || emailUsername || 'Ù…Ø±ÙŠØ¶'
 
   const handlePushNotifications = async () => {
     setIsUpdatingPush(true)
@@ -447,22 +447,22 @@ export default function PatientDashboard() {
       if (pushStatus === 'enabled') {
         await unsubscribeUserFromPush()
         setPushStatus('disabled')
-        setPushMessage('تم إيقاف إشعارات الهاتف.')
+        setPushMessage('ØªÙ… Ø¥ÙŠÙ‚Ø§Ù Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ù‡Ø§ØªÙ.')
         return
       }
 
       await subscribeUserToPush()
       setPushStatus('enabled')
-      setPushMessage('تم تفعيل إشعارات الهاتف بنجاح.')
+      setPushMessage('ØªÙ… ØªÙØ¹ÙŠÙ„ Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ù‡Ø§ØªÙ Ø¨Ù†Ø¬Ø§Ø­.')
     } catch (error) {
       const status = await getPushNotificationStatus()
       setPushStatus(status)
       setPushMessage(
         status === 'denied'
-          ? 'تم رفض الإشعارات من المتصفح. يمكنك السماح بها من إعدادات الموقع.'
+          ? 'ØªÙ… Ø±ÙØ¶ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ù…Ù† Ø§Ù„Ù…ØªØµÙØ­. ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø³Ù…Ø§Ø­ Ø¨Ù‡Ø§ Ù…Ù† Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹.'
           : error instanceof Error
             ? error.message
-            : 'تعذر تحديث إعدادات إشعارات الهاتف.',
+            : 'ØªØ¹Ø°Ø± ØªØ­Ø¯ÙŠØ« Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ù‡Ø§ØªÙ.',
       )
     } finally {
       setIsUpdatingPush(false)
@@ -537,7 +537,7 @@ export default function PatientDashboard() {
       const message =
         error instanceof Error
           ? error.message
-          : 'تعذر تحميل التقييمات. يرجى المحاولة مرة أخرى.'
+          : 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.'
       setReviewsError(message)
     } finally {
       setLoadingReviews(false)
@@ -549,12 +549,12 @@ export default function PatientDashboard() {
     setBookingSuccess('')
 
     if (!bookingDate || !bookingTime) {
-      setBookingError('يرجى اختيار التاريخ والوقت المتاح.')
+      setBookingError('ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„ÙˆÙ‚Øª Ø§Ù„Ù…ØªØ§Ø­.')
       return
     }
 
     if (!selectedBookingSlot || selectedBookingSlot.status !== 'available') {
-      setBookingError('يرجى اختيار وقت متاح.')
+      setBookingError('ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ÙˆÙ‚Øª Ù…ØªØ§Ø­.')
       return
     }
 
@@ -580,7 +580,7 @@ export default function PatientDashboard() {
       )
       resetInlineBookingForm()
       setActiveBookingDoctorId('')
-      setBookingSuccess('تم حجز الموعد بنجاح')
+      setBookingSuccess('ØªÙ… Ø­Ø¬Ø² Ø§Ù„Ù…ÙˆØ¹Ø¯ Ø¨Ù†Ø¬Ø§Ø­')
     } catch (error) {
       setBookingError(getBookingErrorMessage(error))
     } finally {
@@ -591,26 +591,26 @@ export default function PatientDashboard() {
   const renderBookingSlotGrid = () => (
     <div className="grid gap-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-sm font-bold text-slate-800">الوقت المتاح</span>
+        <span className="text-sm font-bold text-slate-800">Ø§Ù„ÙˆÙ‚Øª Ø§Ù„Ù…ØªØ§Ø­</span>
         <div className="flex flex-wrap gap-3 text-xs font-bold text-slate-600">
-          <span>🟢 متاح</span>
-          <span>🔴 محجوز</span>
+          <span>ðŸŸ¢ Ù…ØªØ§Ø­</span>
+          <span>ðŸ”´ Ù…Ø­Ø¬ÙˆØ²</span>
         </div>
       </div>
 
       {!bookingDate ? (
         <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
-          اختر التاريخ أولاً
+          Ø§Ø®ØªØ± Ø§Ù„ØªØ§Ø±ÙŠØ® Ø£ÙˆÙ„Ø§Ù‹
         </p>
       ) : loadingSlots ? (
         <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
-          جاري تحميل الأوقات...
+          Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£ÙˆÙ‚Ø§Øª...
         </p>
       ) : daySlots.length > 0 ? (
         <div className="grid gap-3">
           {daySlots.every((slot) => slot.status === 'booked') ? (
             <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-              جميع الأوقات محجوزة في هذا اليوم
+              Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£ÙˆÙ‚Ø§Øª Ù…Ø­Ø¬ÙˆØ²Ø© ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙŠÙˆÙ…
             </p>
           ) : null}
 
@@ -645,7 +645,7 @@ export default function PatientDashboard() {
         </div>
       ) : (
         <p className="rounded-lg bg-white/70 px-4 py-4 text-sm font-semibold text-slate-600">
-          لا توجد أوقات عمل في هذا اليوم أو الطبيب غير متاح
+          Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£ÙˆÙ‚Ø§Øª Ø¹Ù…Ù„ ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙŠÙˆÙ… Ø£Ùˆ Ø§Ù„Ø·Ø¨ÙŠØ¨ ØºÙŠØ± Ù…ØªØ§Ø­
         </p>
       )}
     </div>
@@ -666,9 +666,9 @@ export default function PatientDashboard() {
               className="flex h-11 w-11 items-center justify-center rounded-xl bg-[rgba(15,118,110,0.08)] text-2xl font-black leading-none text-[#0f766e] shadow-sm transition hover:bg-[rgba(15,118,110,0.15)] focus:outline-none focus:ring-2 focus:ring-teal-100"
               aria-haspopup="menu"
               aria-expanded={showProfileMenu}
-              aria-label="القائمة الرئيسية"
+              aria-label="Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©"
             >
-              ☰
+              â˜°
             </button>
 
             <div
@@ -685,8 +685,8 @@ export default function PatientDashboard() {
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition hover:bg-teal-50 hover:text-teal-800"
                 role="menuitem"
               >
-                <span aria-hidden="true">👤</span>
-                الملف الشخصي
+                <span aria-hidden="true">ðŸ‘¤</span>
+                Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ
               </button>
               <button
                 type="button"
@@ -694,8 +694,8 @@ export default function PatientDashboard() {
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition hover:bg-teal-50 hover:text-teal-800"
                 role="menuitem"
               >
-                <span aria-hidden="true">⚙️</span>
-                الإعدادات
+                <span aria-hidden="true">âš™ï¸</span>
+                Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª
               </button>
               <button
                 type="button"
@@ -704,8 +704,8 @@ export default function PatientDashboard() {
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                 role="menuitem"
               >
-                <span aria-hidden="true">🚪</span>
-                تسجيل الخروج
+                <span aria-hidden="true">ðŸšª</span>
+                ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬
               </button>
             </div>
           </div>
@@ -717,13 +717,13 @@ export default function PatientDashboard() {
               </div>
 
               <div className="min-w-0">
-                <p className="text-xs font-black text-teal-700 sm:text-sm">مرحباً بك</p>
+                <p className="text-xs font-black text-teal-700 sm:text-sm">Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨Ùƒ</p>
                 <h1 className="mt-1 truncate text-2xl font-black tracking-normal sm:mt-2 sm:text-4xl">
                   {patientDisplayName}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600 sm:mt-3 sm:text-base sm:leading-8">
-                  لديك {upcomingAppointments.length} موعداً قادماً و{' '}
-                  {unreadNotificationsCount} إشعاراً غير مقروءاً
+                  Ù„Ø¯ÙŠÙƒ {upcomingAppointments.length} Ù…ÙˆØ¹Ø¯Ø§Ù‹ Ù‚Ø§Ø¯Ù…Ø§Ù‹ Ùˆ{' '}
+                  {unreadNotificationsCount} Ø¥Ø´Ø¹Ø§Ø±Ø§Ù‹ ØºÙŠØ± Ù…Ù‚Ø±ÙˆØ¡Ø§Ù‹
                 </p>
               </div>
             </div>
@@ -733,29 +733,29 @@ export default function PatientDashboard() {
         <section className="mb-1 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             {
-              icon: '➕',
-              label: 'حجز موعد جديد',
+              icon: 'âž•',
+              label: 'Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯ Ø¬Ø¯ÙŠØ¯',
               onClick: () => navigate('/patient/book-appointment'),
               className:
                 'border-slate-200 bg-white text-teal-700 hover:border-teal-200 hover:bg-teal-50',
             },
             {
-              icon: '📅',
-              label: 'مواعيدي',
+              icon: 'ðŸ“…',
+              label: 'Ù…ÙˆØ§Ø¹ÙŠØ¯ÙŠ',
               onClick: () => navigate('/patient/appointments'),
               className:
                 'border-slate-200 bg-white text-blue-700 hover:border-blue-200 hover:bg-blue-50',
             },
             {
-              icon: '🔔',
-              label: 'الإشعارات',
+              icon: 'ðŸ””',
+              label: 'Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª',
               onClick: () => setShowNotificationsModal(true),
               className:
                 'border-slate-200 bg-white text-amber-700 hover:border-amber-200 hover:bg-amber-50',
             },
             {
-              icon: '📄',
-              label: 'السجلات الطبية',
+              icon: 'ðŸ“„',
+              label: 'Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ø·Ø¨ÙŠØ©',
               onClick: () => setShowMedicalRecordsModal(true),
               className:
                 'border-slate-200 bg-white text-violet-700 hover:border-violet-200 hover:bg-violet-50',
@@ -803,7 +803,7 @@ export default function PatientDashboard() {
                   : pushStatus === 'denied'
                     ? 'مرفوضة من المتصفح'
                     : pushStatus === 'unsupported'
-                      ? 'غير مدعومة في هذا المتصفح'
+                      ? 'غير مدعومة'
                       : 'غير مفعلة'}
               </p>
               {pushMessage ? (
@@ -840,11 +840,11 @@ export default function PatientDashboard() {
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-700">
-                <span aria-hidden="true">🔎</span>
-                <span>ابحث عن طبيب</span>
+                <span aria-hidden="true">ðŸ”Ž</span>
+                <span>Ø§Ø¨Ø­Ø« Ø¹Ù† Ø·Ø¨ÙŠØ¨</span>
               </span>
               <h2 className="mt-2 text-2xl font-black tracking-normal text-slate-950 sm:text-3xl">
-                اختر المدينة والتخصص ثم استعرض الأطباء المتاحين
+                Ø§Ø®ØªØ± Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© ÙˆØ§Ù„ØªØ®ØµØµ Ø«Ù… Ø§Ø³ØªØ¹Ø±Ø¶ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ†
               </h2>
               <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
                 {'\u0627\u0628\u062F\u0623 \u0628\u0627\u062E\u062A\u064A\u0627\u0631 \u0627\u0644\u0645\u062F\u064A\u0646\u0629 \u062B\u0645 \u0627\u0644\u062A\u062E\u0635\u0635 \u0644\u0639\u0631\u0636 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u064A\u0646 \u0648\u0627\u0644\u062D\u062C\u0632 \u0645\u0628\u0627\u0634\u0631\u0629 \u0645\u0646 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0637\u0628\u064A\u0628.'}
@@ -943,23 +943,23 @@ export default function PatientDashboard() {
             <span className="flex items-start justify-between gap-4">
               <span>
                 <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-3xl ring-1 ring-teal-100 transition group-hover:bg-white">
-                  📅
+                  ðŸ“…
                 </span>
                 <span className="block text-lg font-bold tracking-normal text-slate-950">
-                  المواعيد القادمة
+                  Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©
                 </span>
                 <span className="mt-3 block text-sm leading-7 text-slate-600">
-                  راجع مواعيدك القادمة وحالاتها.
+                  Ø±Ø§Ø¬Ø¹ Ù…ÙˆØ§Ø¹ÙŠØ¯Ùƒ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø© ÙˆØ­Ø§Ù„Ø§ØªÙ‡Ø§.
                 </span>
               </span>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-700">
-                {showAppointmentsModal ? '⌃' : '⌄'}
+                {showAppointmentsModal ? 'âŒƒ' : 'âŒ„'}
               </span>
             </span>
             <span className="mt-6 inline-flex rounded-xl bg-teal-50 px-4 py-2 text-sm font-black text-teal-800 ring-1 ring-teal-100">
               {isFetchingAppointments
-                ? 'جاري التحميل...'
-                : `${upcomingAppointments.length} موعد`}
+                ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...'
+                : `${upcomingAppointments.length} Ù…ÙˆØ¹Ø¯`}
             </span>
           </button>
 
@@ -976,21 +976,21 @@ export default function PatientDashboard() {
             <span className="flex items-start justify-between gap-4">
               <span>
                 <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-3xl ring-1 ring-emerald-100 transition group-hover:bg-white">
-                  📄
+                  ðŸ“„
                 </span>
                 <span className="block text-lg font-bold tracking-normal text-slate-950">
-                  السجلات الطبية
+                  Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ø·Ø¨ÙŠØ©
                 </span>
                 <span className="mt-3 block text-sm leading-7 text-slate-600">
-                  استعرض ملخصات الزيارات والوصفات والتقارير الطبية.
+                  Ø§Ø³ØªØ¹Ø±Ø¶ Ù…Ù„Ø®ØµØ§Øª Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª ÙˆØ§Ù„ÙˆØµÙØ§Øª ÙˆØ§Ù„ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø·Ø¨ÙŠØ©.
                 </span>
               </span>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-700">
-                {showMedicalRecordsModal ? '⌃' : '⌄'}
+                {showMedicalRecordsModal ? 'âŒƒ' : 'âŒ„'}
               </span>
             </span>
             <span className="mt-6 inline-flex rounded-xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
-              لا توجد سجلات جديدة
+              Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ø¬Ø¯ÙŠØ¯Ø©
             </span>
           </button>
 
@@ -1007,21 +1007,21 @@ export default function PatientDashboard() {
             <span className="flex items-start justify-between gap-4">
               <span>
                 <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-3xl ring-1 ring-amber-100 transition group-hover:bg-white">
-                  🔔
+                  ðŸ””
                 </span>
                 <span className="block text-lg font-bold tracking-normal text-slate-950">
-                  الإشعارات
+                  Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª
                 </span>
                 <span className="mt-3 block text-sm leading-7 text-slate-600">
-                  تابع آخر تحديثات مواعيدك الطبية.
+                  ØªØ§Ø¨Ø¹ Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«Ø§Øª Ù…ÙˆØ§Ø¹ÙŠØ¯Ùƒ Ø§Ù„Ø·Ø¨ÙŠØ©.
                 </span>
               </span>
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-700">
-                {showNotificationsModal ? '⌃' : '⌄'}
+                {showNotificationsModal ? 'âŒƒ' : 'âŒ„'}
               </span>
             </span>
             <span className="mt-6 inline-flex rounded-xl bg-amber-50 px-4 py-2 text-sm font-black text-amber-800 ring-1 ring-amber-100">
-              {unreadNotificationsCount} غير مقروء
+              {unreadNotificationsCount} ØºÙŠØ± Ù…Ù‚Ø±ÙˆØ¡
             </span>
           </button>
         </section>
@@ -1040,19 +1040,19 @@ export default function PatientDashboard() {
             <span className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <span className="flex items-start gap-4">
                 <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm ring-1 ring-teal-100">
-                  👨‍⚕️
+                  ðŸ‘¨â€âš•ï¸
                 </span>
                 <span className="min-w-0">
                 <span className="block text-2xl font-black tracking-normal text-slate-950">
-                  الأطباء
+                  Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡
                 </span>
                 <span className="mt-2 block text-sm leading-7 text-slate-600">
-                  اختر التخصص وتعرّف على الأطباء المتاحين ومعلوماتهم المهنية.
+                  Ø§Ø®ØªØ± Ø§Ù„ØªØ®ØµØµ ÙˆØªØ¹Ø±Ù‘Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ† ÙˆÙ…Ø¹Ù„ÙˆÙ…Ø§ØªÙ‡Ù… Ø§Ù„Ù…Ù‡Ù†ÙŠØ©.
                 </span>
               </span>
               </span>
               <span className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white shadow-sm transition group-hover:bg-teal-800">
-                استعراض الأطباء
+                Ø§Ø³ØªØ¹Ø±Ø§Ø¶ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡
               </span>
             </span>
           </button>
@@ -1062,14 +1062,14 @@ export default function PatientDashboard() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700">
-                <span aria-hidden="true">⭐</span>
-                <span>أطباء موثوقون</span>
+                <span aria-hidden="true">â­</span>
+                <span>Ø£Ø·Ø¨Ø§Ø¡ Ù…ÙˆØ«ÙˆÙ‚ÙˆÙ†</span>
               </span>
               <h2 className="mt-1 text-2xl font-black tracking-normal text-slate-950">
-                الأطباء المتميزون
+                Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªÙ…ÙŠØ²ÙˆÙ†
               </h2>
               <p className="mt-2 text-sm leading-7 text-slate-600">
-                أطباء حصلوا على تقييمات جيدة وتجارب موثوقة من المرضى.
+                Ø£Ø·Ø¨Ø§Ø¡ Ø­ØµÙ„ÙˆØ§ Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¬ÙŠØ¯Ø© ÙˆØªØ¬Ø§Ø±Ø¨ Ù…ÙˆØ«ÙˆÙ‚Ø© Ù…Ù† Ø§Ù„Ù…Ø±Ø¶Ù‰.
               </p>
             </div>
 
@@ -1078,13 +1078,13 @@ export default function PatientDashboard() {
               onClick={openDoctorsDirectory}
               className="inline-flex min-h-11 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-5 text-sm font-bold text-teal-800 transition hover:-translate-y-0.5 hover:bg-teal-100 hover:shadow-sm"
             >
-              المزيد
+              Ø§Ù„Ù…Ø²ÙŠØ¯
             </button>
           </div>
 
           {loadingFeaturedDoctors ? (
             <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-              جاري تحميل الأطباء المتميزين...
+              Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªÙ…ÙŠØ²ÙŠÙ†...
             </p>
           ) : featuredDoctors.length > 0 ? (
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1116,7 +1116,7 @@ export default function PatientDashboard() {
                           {getSpecialtyMeta(doctor.specialty).labelAr}
                         </p>
                         <p className="sr-only">
-                          {doctor.clinic_name ?? 'عيادة غير محددة'}
+                          {doctor.clinic_name ?? 'Ø¹ÙŠØ§Ø¯Ø© ØºÙŠØ± Ù…Ø­Ø¯Ø¯Ø©'}
                         </p>
                       </div>
                     </div>
@@ -1124,17 +1124,17 @@ export default function PatientDashboard() {
                     <button
                       type="button"
                       className="absolute left-4 top-4 text-2xl leading-none text-slate-300 transition hover:scale-110 hover:text-rose-500"
-                      aria-label="إضافة إلى المفضلة"
+                      aria-label="Ø¥Ø¶Ø§ÙØ© Ø¥Ù„Ù‰ Ø§Ù„Ù…ÙØ¶Ù„Ø©"
                     >
-                      ♡
+                      â™¡
                     </button>
                   </div>
 
                   <div className="mt-5 grid gap-3 text-sm">
                     <p className="inline-flex w-fit items-center gap-2 rounded-2xl bg-amber-50 px-4 py-2 font-black text-amber-700 ring-1 ring-amber-100">
                       {doctor.reviews_count > 0 && doctor.average_rating != null
-                        ? `⭐ ${doctor.average_rating.toFixed(1)} (${doctor.reviews_count} تقييم)`
-                        : 'لا توجد تقييمات بعد'}
+                        ? `â­ ${doctor.average_rating.toFixed(1)} (${doctor.reviews_count} ØªÙ‚ÙŠÙŠÙ…)`
+                        : 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯'}
                     </p>
                     {doctor.city ? (
                       <p className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 font-semibold text-slate-700">
@@ -1149,8 +1149,8 @@ export default function PatientDashboard() {
                       </p>
                     ) : null}
                     {doctor.years_experience != null ? (
-                      <p className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 font-semibold text-slate-700 before:content-['🩺']">
-                        خبرة {doctor.years_experience} سنة
+                      <p className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3 font-semibold text-slate-700 before:content-['ðŸ©º']">
+                        Ø®Ø¨Ø±Ø© {doctor.years_experience} Ø³Ù†Ø©
                       </p>
                     ) : null}
                   </div>
@@ -1163,8 +1163,8 @@ export default function PatientDashboard() {
                       aria-expanded={activeBookingDoctorId === doctor.id}
                     >
                       {activeBookingDoctorId === doctor.id
-                        ? 'إخفاء نموذج الحجز'
-                        : 'حجز موعد'}
+                        ? 'Ø¥Ø®ÙØ§Ø¡ Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø­Ø¬Ø²'
+                        : 'Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯'}
                     </button>
 
                     <button
@@ -1186,7 +1186,7 @@ export default function PatientDashboard() {
                               className="text-sm font-bold text-slate-800"
                               htmlFor={`featured-booking-date-${doctor.id}`}
                             >
-                              التاريخ
+                              Ø§Ù„ØªØ§Ø±ÙŠØ®
                             </label>
                             <input
                               id={`featured-booking-date-${doctor.id}`}
@@ -1208,7 +1208,7 @@ export default function PatientDashboard() {
                             className="text-sm font-bold text-slate-800"
                             htmlFor={`featured-booking-notes-${doctor.id}`}
                           >
-                            ملاحظات اختيارية
+                            Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ø®ØªÙŠØ§Ø±ÙŠØ©
                           </label>
                           <textarea
                             id={`featured-booking-notes-${doctor.id}`}
@@ -1216,7 +1216,7 @@ export default function PatientDashboard() {
                             onChange={(event) => setBookingNotes(event.target.value)}
                             rows={3}
                             className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
-                            placeholder="اكتب أي ملاحظات للطبيب"
+                            placeholder="Ø§ÙƒØªØ¨ Ø£ÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ù„Ù„Ø·Ø¨ÙŠØ¨"
                           />
                         </div>
 
@@ -1238,8 +1238,8 @@ export default function PatientDashboard() {
                           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-teal-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {submittingBooking
-                            ? 'جاري تأكيد الحجز...'
-                            : 'تأكيد الحجز'}
+                            ? 'Ø¬Ø§Ø±ÙŠ ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¬Ø²...'
+                            : 'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¬Ø²'}
                         </button>
                       </div>
                     ) : null}
@@ -1289,7 +1289,7 @@ export default function PatientDashboard() {
             </div>
           ) : (
             <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-              لا يوجد أطباء متميزون حالياً
+              Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£Ø·Ø¨Ø§Ø¡ Ù…ØªÙ…ÙŠØ²ÙˆÙ† Ø­Ø§Ù„ÙŠØ§Ù‹
             </p>
           )}
         </section>
@@ -1312,25 +1312,25 @@ export default function PatientDashboard() {
                     type="button"
                     onClick={() => setSelectedSpecialty('')}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-600 shadow-sm transition hover:bg-slate-200"
-                    aria-label="رجوع إلى التخصصات"
+                    aria-label="Ø±Ø¬ÙˆØ¹ Ø¥Ù„Ù‰ Ø§Ù„ØªØ®ØµØµØ§Øª"
                   >
-                    ←
+                    â†
                   </button>
                 ) : null}
                 <button
                   type="button"
                   onClick={closeDoctorsDirectory}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-600 shadow-sm transition hover:bg-slate-200"
-                  aria-label="إغلاق"
+                  aria-label="Ø¥ØºÙ„Ø§Ù‚"
                 >
-                  ×
+                  Ã—
                 </button>
               </div>
 
               <div className="mb-4 pl-24">
                 <div className="min-w-0">
                   <span className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1.5 text-sm font-bold text-teal-700">
-                    الأطباء
+                    Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡
                   </span>
                   <h2
                     id="doctors-directory-modal-title"
@@ -1344,10 +1344,10 @@ export default function PatientDashboard() {
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">
                     {selectedSpecialty
-                      ? 'استعرض معلومات الأطباء المهنية وتقييمات المرضى.'
+                      ? 'Ø§Ø³ØªØ¹Ø±Ø¶ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…Ù‡Ù†ÙŠØ© ÙˆØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø§Ù„Ù…Ø±Ø¶Ù‰.'
                       : selectedCity
-                        ? 'ابدأ باختيار التخصص الطبي لعرض الأطباء المتاحين.'
-                        : 'ابدأ باختيار المدينة لعرض التخصصات والأطباء المتاحين.'}
+                        ? 'Ø§Ø¨Ø¯Ø£ Ø¨Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ®ØµØµ Ø§Ù„Ø·Ø¨ÙŠ Ù„Ø¹Ø±Ø¶ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ†.'
+                        : 'Ø§Ø¨Ø¯Ø£ Ø¨Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªØ®ØµØµØ§Øª ÙˆØ§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ†.'}
                   </p>
                 </div>
               </div>
@@ -1390,10 +1390,10 @@ export default function PatientDashboard() {
               <div>
                 <div>
                   <h2 className="text-xl font-bold tracking-normal text-slate-950">
-                    اختر التخصص
+                    Ø§Ø®ØªØ± Ø§Ù„ØªØ®ØµØµ
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    ابدأ باختيار التخصص الطبي لعرض الأطباء المتاحين.
+                    Ø§Ø¨Ø¯Ø£ Ø¨Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ®ØµØµ Ø§Ù„Ø·Ø¨ÙŠ Ù„Ø¹Ø±Ø¶ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ†.
                   </p>
                 </div>
 
@@ -1430,7 +1430,7 @@ export default function PatientDashboard() {
                                 {specialty}
                               </span>
                               <span className="mt-2 block text-sm leading-6 text-slate-600">
-                                عرض الأطباء المتاحين في هذا التخصص
+                                Ø¹Ø±Ø¶ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡ Ø§Ù„Ù…ØªØ§Ø­ÙŠÙ† ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ
                               </span>
                             </span>
                           </span>
@@ -1440,7 +1440,7 @@ export default function PatientDashboard() {
                   </div>
                 ) : (
                   <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                    لا توجد تخصصات متاحة حالياً
+                    Ù„Ø§ ØªÙˆØ¬Ø¯ ØªØ®ØµØµØ§Øª Ù…ØªØ§Ø­Ø© Ø­Ø§Ù„ÙŠØ§Ù‹
                   </p>
                 )}
               </div>
@@ -1460,7 +1460,7 @@ export default function PatientDashboard() {
 
                 {loadingDoctors ? (
                   <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                    جاري تحميل الأطباء...
+                    Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø·Ø¨Ø§Ø¡...
                   </p>
                 ) : doctors.length > 0 ? (
                   <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -1510,8 +1510,8 @@ export default function PatientDashboard() {
                             <p className="mt-2 inline-flex rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-700 md:mt-3 md:px-3 md:py-2 md:text-sm">
                               {doctor.reviewStats.reviewCount > 0 &&
                               doctor.reviewStats.averageRating != null
-                                ? `⭐ ${doctor.reviewStats.averageRating.toFixed(1)} (${doctor.reviewStats.reviewCount} تقييم)`
-                                : 'لا توجد تقييمات بعد'}
+                                ? `â­ ${doctor.reviewStats.averageRating.toFixed(1)} (${doctor.reviewStats.reviewCount} ØªÙ‚ÙŠÙŠÙ…)`
+                                : 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯'}
                             </p>
 
                             <div className="mt-3 flex flex-col gap-2 sm:flex-row md:hidden">
@@ -1520,7 +1520,7 @@ export default function PatientDashboard() {
                                 onClick={() => setSelectedDoctorDetails(doctor)}
                                 className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                               >
-                                عرض التفاصيل
+                                Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„
                               </button>
                               <button
                                 type="button"
@@ -1528,42 +1528,42 @@ export default function PatientDashboard() {
                                 className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-teal-700 px-3 text-sm font-bold text-white transition hover:bg-teal-800"
                                 aria-expanded={activeBookingDoctorId === doctor.id}
                               >
-                                حجز موعد
+                                Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯
                               </button>
                             </div>
 
                             <dl className="mt-4 hidden gap-3 text-sm md:grid md:grid-cols-2">
                               <div>
                                 <dt className="font-bold text-slate-600">
-                                  سنوات الخبرة
+                                  Ø³Ù†ÙˆØ§Øª Ø§Ù„Ø®Ø¨Ø±Ø©
                                 </dt>
                                 <dd className="mt-1 text-slate-950">
                                   {doctor.years_experience != null
-                                    ? `${doctor.years_experience} سنة`
-                                    : 'غير متوفر'}
+                                    ? `${doctor.years_experience} Ø³Ù†Ø©`
+                                    : 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                                 </dd>
                               </div>
 
                               <div>
                                 <dt className="font-bold text-slate-600">
-                                  كلية الطب
+                                  ÙƒÙ„ÙŠØ© Ø§Ù„Ø·Ø¨
                                 </dt>
                                 <dd className="mt-1 text-slate-950">
-                                  {doctor.medical_school ?? 'غير متوفر'}
+                                  {doctor.medical_school ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                                 </dd>
                               </div>
 
                               <div>
                                 <dt className="font-bold text-slate-600">
-                                  سنة التخرج
+                                  Ø³Ù†Ø© Ø§Ù„ØªØ®Ø±Ø¬
                                 </dt>
                                 <dd className="mt-1 text-slate-950">
-                                  {doctor.graduation_year ?? 'غير متوفر'}
+                                  {doctor.graduation_year ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                                 </dd>
                               </div>
 
                               <div>
-                                <dt className="font-bold text-slate-600">اللغات</dt>
+                                <dt className="font-bold text-slate-600">Ø§Ù„Ù„ØºØ§Øª</dt>
                                 <dd className="mt-1 text-slate-950">
                                   {formatList(doctor.languages)}
                                 </dd>
@@ -1571,7 +1571,7 @@ export default function PatientDashboard() {
 
                               <div className="sm:col-span-2">
                                 <dt className="font-bold text-slate-600">
-                                  المستشفيات السابقة
+                                  Ø§Ù„Ù…Ø³ØªØ´ÙÙŠØ§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©
                                 </dt>
                                 <dd className="mt-1 text-slate-950">
                                   {formatList(doctor.previous_hospitals)}
@@ -1580,10 +1580,10 @@ export default function PatientDashboard() {
 
                               <div className="sm:col-span-2">
                                 <dt className="font-bold text-slate-600">
-                                  نبذة مهنية
+                                  Ù†Ø¨Ø°Ø© Ù…Ù‡Ù†ÙŠØ©
                                 </dt>
                                 <dd className="mt-1 line-clamp-4 leading-7 text-slate-700">
-                                  {doctor.biography ?? 'غير متوفر'}
+                                  {doctor.biography ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                                 </dd>
                               </div>
                             </dl>
@@ -1598,8 +1598,8 @@ export default function PatientDashboard() {
                             aria-expanded={activeBookingDoctorId === doctor.id}
                           >
                             {activeBookingDoctorId === doctor.id
-                              ? 'إخفاء نموذج الحجز'
-                              : 'حجز موعد'}
+                              ? 'Ø¥Ø®ÙØ§Ø¡ Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø­Ø¬Ø²'
+                              : 'Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯'}
                           </button>
 
                           {activeBookingDoctorId === doctor.id ? (
@@ -1610,7 +1610,7 @@ export default function PatientDashboard() {
                                     className="text-sm font-bold text-slate-800"
                                     htmlFor={`booking-date-${doctor.id}`}
                                   >
-                                    التاريخ
+                                    Ø§Ù„ØªØ§Ø±ÙŠØ®
                                   </label>
                                   <input
                                     id={`booking-date-${doctor.id}`}
@@ -1634,7 +1634,7 @@ export default function PatientDashboard() {
                                   className="text-sm font-bold text-slate-800"
                                   htmlFor={`booking-notes-${doctor.id}`}
                                 >
-                                  ملاحظات اختيارية
+                                  Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ø®ØªÙŠØ§Ø±ÙŠØ©
                                 </label>
                                 <textarea
                                   id={`booking-notes-${doctor.id}`}
@@ -1644,7 +1644,7 @@ export default function PatientDashboard() {
                                   }
                                   rows={3}
                                   className="rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-teal-700 focus:ring-4 focus:ring-teal-100"
-                                  placeholder="اكتب أي ملاحظات للطبيب"
+                                  placeholder="Ø§ÙƒØªØ¨ Ø£ÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ù„Ù„Ø·Ø¨ÙŠØ¨"
                                 />
                               </div>
 
@@ -1667,8 +1667,8 @@ export default function PatientDashboard() {
                                   className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   {submittingBooking
-                                    ? 'جاري تأكيد الحجز...'
-                                    : 'تأكيد الحجز'}
+                                    ? 'Ø¬Ø§Ø±ÙŠ ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¬Ø²...'
+                                    : 'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø­Ø¬Ø²'}
                                 </button>
 
                                 <button
@@ -1676,7 +1676,7 @@ export default function PatientDashboard() {
                                   onClick={() => handleToggleBookingForm(doctor.id)}
                                   className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                                 >
-                                  إلغاء
+                                  Ø¥Ù„ØºØ§Ø¡
                                 </button>
                               </div>
                             </div>
@@ -1692,11 +1692,11 @@ export default function PatientDashboard() {
                           >
                             <span>
                               {expandedReviewsDoctorId === doctor.id
-                                ? 'إخفاء التقييمات'
-                                : 'عرض التقييمات'}
+                                ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª'
+                                : 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª'}
                             </span>
                             <span className="text-xs text-amber-800">
-                              {doctor.reviewStats.reviewCount} تقييم
+                              {doctor.reviewStats.reviewCount} ØªÙ‚ÙŠÙŠÙ…
                             </span>
                           </button>
 
@@ -1704,10 +1704,10 @@ export default function PatientDashboard() {
                             <section className="mt-5 rounded-lg border border-amber-100 bg-amber-50/50 p-4">
                               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                 <h4 className="text-base font-bold text-slate-950">
-                                  التقييمات
+                                  Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª
                                 </h4>
                                 <span className="text-sm font-semibold text-amber-700">
-                                  {doctor.reviewStats.reviewCount} تقييم
+                                  {doctor.reviewStats.reviewCount} ØªÙ‚ÙŠÙŠÙ…
                                 </span>
                               </div>
 
@@ -1719,7 +1719,7 @@ export default function PatientDashboard() {
 
                               {loadingReviews && !doctorReviews[doctor.id] ? (
                                 <p className="mt-4 rounded-lg bg-white/70 px-4 py-5 text-center text-sm font-semibold text-slate-600">
-                                  جاري تحميل التقييمات...
+                                  Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª...
                                 </p>
                               ) : (doctorReviews[doctor.id] ?? []).length > 0 ? (
                                 <div className="mt-4 grid gap-3">
@@ -1731,12 +1731,12 @@ export default function PatientDashboard() {
                                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
                                           <p className="font-bold text-slate-950">
-                                            مريض
+                                            Ù…Ø±ÙŠØ¶
                                           </p>
                                           <p className="mt-1 text-sm font-bold text-amber-600">
-                                            {'★'.repeat(review.rating)}
+                                            {'â˜…'.repeat(review.rating)}
                                             <span className="text-slate-300">
-                                              {'★'.repeat(5 - review.rating)}
+                                              {'â˜…'.repeat(5 - review.rating)}
                                             </span>
                                           </p>
                                         </div>
@@ -1749,14 +1749,14 @@ export default function PatientDashboard() {
 
                                       <p className="mt-3 text-sm leading-7 text-slate-700">
                                         {review.comment?.trim() ||
-                                          'لم يكتب المريض تعليقاً.'}
+                                          'Ù„Ù… ÙŠÙƒØªØ¨ Ø§Ù„Ù…Ø±ÙŠØ¶ ØªØ¹Ù„ÙŠÙ‚Ø§Ù‹.'}
                                       </p>
                                     </article>
                                   ))}
                                 </div>
                               ) : (
                                 <p className="mt-4 rounded-lg bg-white/70 px-4 py-5 text-center text-sm font-semibold text-slate-600">
-                                  لا توجد تقييمات بعد
+                                  Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯
                                 </p>
                               )}
                             </section>
@@ -1767,7 +1767,7 @@ export default function PatientDashboard() {
                   </div>
                 ) : (
                   <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                    لا يوجد أطباء في هذا التخصص داخل هذه المدينة حالياً
+                    Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£Ø·Ø¨Ø§Ø¡ ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ Ø¯Ø§Ø®Ù„ Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© Ø­Ø§Ù„ÙŠØ§Ù‹
                   </p>
                 )}
               </div>
@@ -1798,10 +1798,10 @@ export default function PatientDashboard() {
                   <p className="mt-2 inline-flex rounded-lg bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700">
                     {selectedDoctorDetails.reviewStats.reviewCount > 0 &&
                     selectedDoctorDetails.reviewStats.averageRating != null
-                      ? `⭐ ${selectedDoctorDetails.reviewStats.averageRating.toFixed(
+                      ? `â­ ${selectedDoctorDetails.reviewStats.averageRating.toFixed(
                           1,
-                        )} (${selectedDoctorDetails.reviewStats.reviewCount} تقييم)`
-                      : 'لا توجد تقييمات بعد'}
+                        )} (${selectedDoctorDetails.reviewStats.reviewCount} ØªÙ‚ÙŠÙŠÙ…)`
+                      : 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯'}
                   </p>
                 </div>
 
@@ -1809,54 +1809,54 @@ export default function PatientDashboard() {
                   type="button"
                   onClick={() => setSelectedDoctorDetails(null)}
                   className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-lg font-bold text-slate-700 transition hover:bg-slate-50"
-                  aria-label="إغلاق تفاصيل الطبيب"
+                  aria-label="Ø¥ØºÙ„Ø§Ù‚ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø·Ø¨ÙŠØ¨"
                 >
-                  ×
+                  Ã—
                 </button>
               </div>
 
               <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="font-bold text-slate-600">سنوات الخبرة</dt>
+                  <dt className="font-bold text-slate-600">Ø³Ù†ÙˆØ§Øª Ø§Ù„Ø®Ø¨Ø±Ø©</dt>
                   <dd className="mt-1 text-slate-950">
                     {selectedDoctorDetails.years_experience != null
-                      ? `${selectedDoctorDetails.years_experience} سنة`
-                      : 'غير متوفر'}
+                      ? `${selectedDoctorDetails.years_experience} Ø³Ù†Ø©`
+                      : 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="font-bold text-slate-600">كلية الطب</dt>
+                  <dt className="font-bold text-slate-600">ÙƒÙ„ÙŠØ© Ø§Ù„Ø·Ø¨</dt>
                   <dd className="mt-1 text-slate-950">
-                    {selectedDoctorDetails.medical_school ?? 'غير متوفر'}
+                    {selectedDoctorDetails.medical_school ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="font-bold text-slate-600">سنة التخرج</dt>
+                  <dt className="font-bold text-slate-600">Ø³Ù†Ø© Ø§Ù„ØªØ®Ø±Ø¬</dt>
                   <dd className="mt-1 text-slate-950">
-                    {selectedDoctorDetails.graduation_year ?? 'غير متوفر'}
+                    {selectedDoctorDetails.graduation_year ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="font-bold text-slate-600">اللغات</dt>
+                  <dt className="font-bold text-slate-600">Ø§Ù„Ù„ØºØ§Øª</dt>
                   <dd className="mt-1 text-slate-950">
                     {formatList(selectedDoctorDetails.languages)}
                   </dd>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <dt className="font-bold text-slate-600">المستشفيات السابقة</dt>
+                  <dt className="font-bold text-slate-600">Ø§Ù„Ù…Ø³ØªØ´ÙÙŠØ§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©</dt>
                   <dd className="mt-1 text-slate-950">
                     {formatList(selectedDoctorDetails.previous_hospitals)}
                   </dd>
                 </div>
 
                 <div className="sm:col-span-2">
-                  <dt className="font-bold text-slate-600">نبذة مهنية</dt>
+                  <dt className="font-bold text-slate-600">Ù†Ø¨Ø°Ø© Ù…Ù‡Ù†ÙŠØ©</dt>
                   <dd className="mt-1 leading-7 text-slate-700">
-                    {selectedDoctorDetails.biography ?? 'غير متوفر'}
+                    {selectedDoctorDetails.biography ?? 'ØºÙŠØ± Ù…ØªÙˆÙØ±'}
                   </dd>
                 </div>
               </dl>
@@ -1870,14 +1870,14 @@ export default function PatientDashboard() {
                   }}
                   className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800"
                 >
-                  حجز موعد
+                  Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedDoctorDetails(null)}
                   className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                 >
-                  إغلاق
+                  Ø¥ØºÙ„Ø§Ù‚
                 </button>
               </div>
             </section>
@@ -1898,15 +1898,15 @@ export default function PatientDashboard() {
             >
               <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-teal-700">لوحة المريض</p>
+                  <p className="text-sm font-bold text-teal-700">Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø±ÙŠØ¶</p>
                   <h2
                     id="medical-records-modal-title"
                     className="mt-1 text-2xl font-black tracking-normal text-slate-950"
                   >
-                    السجلات الطبية
+                    Ø§Ù„Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ø·Ø¨ÙŠØ©
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    استعرض ملخصات الزيارات والوصفات والتقارير الطبية.
+                    Ø§Ø³ØªØ¹Ø±Ø¶ Ù…Ù„Ø®ØµØ§Øª Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª ÙˆØ§Ù„ÙˆØµÙØ§Øª ÙˆØ§Ù„ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø·Ø¨ÙŠØ©.
                   </p>
                 </div>
 
@@ -1916,22 +1916,22 @@ export default function PatientDashboard() {
                     onClick={() => setShowMedicalRecordsModal(false)}
                     className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                   >
-                    إغلاق
+                    Ø¥ØºÙ„Ø§Ù‚
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowMedicalRecordsModal(false)}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg font-bold text-slate-700 transition hover:bg-slate-50"
-                    aria-label="إغلاق"
+                    aria-label="Ø¥ØºÙ„Ø§Ù‚"
                   >
-                    ×
+                    Ã—
                   </button>
                 </div>
               </div>
 
               <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                لا توجد سجلات طبية بعد
+                Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³Ø¬Ù„Ø§Øª Ø·Ø¨ÙŠØ© Ø¨Ø¹Ø¯
               </p>
             </section>
           </div>
@@ -1951,15 +1951,15 @@ export default function PatientDashboard() {
             >
               <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-teal-700">لوحة المريض</p>
+                  <p className="text-sm font-bold text-teal-700">Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø±ÙŠØ¶</p>
                   <h2
                     id="notifications-modal-title"
                     className="mt-1 text-2xl font-black tracking-normal text-slate-950"
                   >
-                    الإشعارات
+                    Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª
                   </h2>
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    تابع آخر تحديثات مواعيدك الطبية.
+                    ØªØ§Ø¨Ø¹ Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«Ø§Øª Ù…ÙˆØ§Ø¹ÙŠØ¯Ùƒ Ø§Ù„Ø·Ø¨ÙŠØ©.
                   </p>
                 </div>
 
@@ -1969,16 +1969,16 @@ export default function PatientDashboard() {
                     onClick={() => setShowNotificationsModal(false)}
                     className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                   >
-                    إغلاق
+                    Ø¥ØºÙ„Ø§Ù‚
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowNotificationsModal(false)}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg font-bold text-slate-700 transition hover:bg-slate-50"
-                    aria-label="إغلاق"
+                    aria-label="Ø¥ØºÙ„Ø§Ù‚"
                   >
-                    ×
+                    Ã—
                   </button>
                 </div>
               </div>
@@ -2002,15 +2002,15 @@ export default function PatientDashboard() {
             >
               <div className="mb-5 flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-teal-700">لوحة المريض</p>
+                  <p className="text-sm font-bold text-teal-700">Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø±ÙŠØ¶</p>
                   <h2
                     id="upcoming-appointments-modal-title"
                     className="mt-1 text-2xl font-black tracking-normal text-slate-950"
                   >
-                    المواعيد القادمة
+                    Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©
                   </h2>
                   <p className="mt-2 text-sm text-slate-600">
-                    أقرب خمسة مواعيد مرتبة حسب التاريخ.
+                    Ø£Ù‚Ø±Ø¨ Ø®Ù…Ø³Ø© Ù…ÙˆØ§Ø¹ÙŠØ¯ Ù…Ø±ØªØ¨Ø© Ø­Ø³Ø¨ Ø§Ù„ØªØ§Ø±ÙŠØ®.
                   </p>
                 </div>
 
@@ -2020,7 +2020,7 @@ export default function PatientDashboard() {
                     onClick={() => navigate('/patient/book-appointment')}
                     className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-bold text-white transition hover:bg-teal-800"
                   >
-                    حجز موعد جديد
+                    Ø­Ø¬Ø² Ù…ÙˆØ¹Ø¯ Ø¬Ø¯ÙŠØ¯
                   </button>
 
                   <button
@@ -2028,16 +2028,16 @@ export default function PatientDashboard() {
                     onClick={() => setShowAppointmentsModal(false)}
                     className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                   >
-                    إغلاق
+                    Ø¥ØºÙ„Ø§Ù‚
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setShowAppointmentsModal(false)}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg font-bold text-slate-700 transition hover:bg-slate-50"
-                    aria-label="إغلاق"
+                    aria-label="Ø¥ØºÙ„Ø§Ù‚"
                   >
-                    ×
+                    Ã—
                   </button>
                 </div>
               </div>
@@ -2050,17 +2050,17 @@ export default function PatientDashboard() {
 
               {isFetchingAppointments ? (
                 <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                  جاري تحميل المواعيد...
+                  Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯...
                 </p>
               ) : upcomingAppointments.length > 0 ? (
                 <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
                   <div className="hidden gap-px bg-slate-200 text-sm md:grid md:grid-cols-4">
-                    <div className="bg-slate-50 p-3 font-bold text-slate-700">الطبيب</div>
-                    <div className="bg-slate-50 p-3 font-bold text-slate-700">التخصص</div>
+                    <div className="bg-slate-50 p-3 font-bold text-slate-700">Ø§Ù„Ø·Ø¨ÙŠØ¨</div>
+                    <div className="bg-slate-50 p-3 font-bold text-slate-700">Ø§Ù„ØªØ®ØµØµ</div>
                     <div className="bg-slate-50 p-3 font-bold text-slate-700">
-                      تاريخ الموعد
+                      ØªØ§Ø±ÙŠØ® Ø§Ù„Ù…ÙˆØ¹Ø¯
                     </div>
-                    <div className="bg-slate-50 p-3 font-bold text-slate-700">الحالة</div>
+                    <div className="bg-slate-50 p-3 font-bold text-slate-700">Ø§Ù„Ø­Ø§Ù„Ø©</div>
                   </div>
                   <div className="divide-y divide-slate-200">
                     {upcomingAppointments.map((appointment) => (
@@ -2070,7 +2070,7 @@ export default function PatientDashboard() {
                       >
                         <div className="md:p-3">
                           <span className="block font-bold text-slate-500 md:hidden">
-                            الطبيب
+                            Ø§Ù„Ø·Ø¨ÙŠØ¨
                           </span>
                           <span className="font-semibold text-slate-950">
                             {appointment.doctor_name}
@@ -2078,32 +2078,32 @@ export default function PatientDashboard() {
                         </div>
                         <div className="md:p-3">
                           <span className="block font-bold text-slate-500 md:hidden">
-                            التخصص
+                            Ø§Ù„ØªØ®ØµØµ
                           </span>
                           <span className="text-slate-700">{appointment.specialty}</span>
                         </div>
                         <div className="md:p-3">
                           <span className="block font-bold text-slate-500 md:hidden">
-                            تاريخ الموعد
+                            ØªØ§Ø±ÙŠØ® Ø§Ù„Ù…ÙˆØ¹Ø¯
                           </span>
                           <div className="flex flex-col items-start gap-1 md:items-end">
                             <div className="flex items-center gap-1 text-xl font-black text-teal-700">
                               <span>
                                 {formatLocalAppointmentTime(appointment.appointment_date)}
                               </span>
-                              <span aria-hidden="true">⏰</span>
+                              <span aria-hidden="true">â°</span>
                             </div>
                             <div className="flex items-center gap-1 text-sm font-bold text-slate-500">
                               <span>
                                 {formatLocalAppointmentDate(appointment.appointment_date)}
                               </span>
-                              <span aria-hidden="true">📅</span>
+                              <span aria-hidden="true">ðŸ“…</span>
                             </div>
                           </div>
                         </div>
                         <div className="md:p-3">
                           <span className="block font-bold text-slate-500 md:hidden">
-                            الحالة
+                            Ø§Ù„Ø­Ø§Ù„Ø©
                           </span>
                           <span className="inline-flex rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">
                             {getStatusLabel(appointment.status)}
@@ -2115,7 +2115,7 @@ export default function PatientDashboard() {
                 </div>
               ) : (
                 <p className="mt-5 rounded-lg bg-slate-50 px-4 py-6 text-center text-sm font-semibold text-slate-600">
-                  لا توجد مواعيد قادمة
+                  Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…ÙˆØ§Ø¹ÙŠØ¯ Ù‚Ø§Ø¯Ù…Ø©
                 </p>
               )}
             </section>

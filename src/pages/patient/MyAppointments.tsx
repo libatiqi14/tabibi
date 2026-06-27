@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   cancelAppointment,
+  deletePatientAppointment,
   getPatientAppointments,
   rescheduleAppointment,
   type Appointment,
@@ -41,11 +42,26 @@ function toDateTimeLocalValue(date: string) {
   return formatAppointmentDateTimeLocalInput(date)
 }
 
+function parseLocalAppointmentDate(value: string) {
+  return new Date(value.replace(' ', 'T'))
+}
+
+function canDeleteAppointment(appointment: Appointment) {
+  if (appointment.status === 'cancelled' || appointment.status === 'completed') {
+    return true
+  }
+
+  return parseLocalAppointmentDate(appointment.appointment_date).getTime() < Date.now()
+}
+
 export default function MyAppointments() {
   const navigate = useNavigate()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [appointmentPendingDelete, setAppointmentPendingDelete] =
+    useState<Appointment | null>(null)
   const [reschedulingAppointment, setReschedulingAppointment] =
     useState<Appointment | null>(null)
   const [reviewingAppointment, setReviewingAppointment] =
@@ -155,6 +171,52 @@ export default function MyAppointments() {
       setErrorMessage(message)
     } finally {
       setCancellingId(null)
+    }
+  }
+
+  const openDeleteConfirmation = (appointment: Appointment) => {
+    setAppointmentPendingDelete(appointment)
+    setErrorMessage('')
+    setSuccessMessage('')
+  }
+
+  const closeDeleteConfirmation = () => {
+    if (deletingId) {
+      return
+    }
+
+    setAppointmentPendingDelete(null)
+  }
+
+  const handleDeleteAppointment = async () => {
+    if (!appointmentPendingDelete) {
+      return
+    }
+
+    setDeletingId(appointmentPendingDelete.id)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await deletePatientAppointment(appointmentPendingDelete.id)
+      setAppointments((currentAppointments) =>
+        currentAppointments.filter(
+          (appointment) => appointment.id !== appointmentPendingDelete.id,
+        ),
+      )
+      setReviewedAppointments((currentReviews) => {
+        const nextReviews = { ...currentReviews }
+        delete nextReviews[appointmentPendingDelete.id]
+
+        return nextReviews
+      })
+      setSuccessMessage('تم حذف الموعد بنجاح')
+      setAppointmentPendingDelete(null)
+    } catch (error) {
+      console.error('Failed to delete appointment', error)
+      setErrorMessage('تعذر حذف الموعد، حاول مرة أخرى')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -354,7 +416,8 @@ export default function MyAppointments() {
                     </div>
 
                     {appointment.status === 'scheduled' ||
-                    appointment.status === 'completed' ? (
+                    appointment.status === 'completed' ||
+                    canDeleteAppointment(appointment) ? (
                       <div className="flex flex-col gap-2 sm:flex-row xl:shrink-0">
                         {appointment.status === 'completed' ? (
                           reviewedAppointments[appointment.id] ? (
@@ -392,6 +455,17 @@ export default function MyAppointments() {
                             </button>
                           </>
                         ) : null}
+
+                        {canDeleteAppointment(appointment) ? (
+                          <button
+                            type="button"
+                            onClick={() => openDeleteConfirmation(appointment)}
+                            disabled={deletingId === appointment.id}
+                            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 px-4 text-sm font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {deletingId === appointment.id ? 'جاري الحذف...' : 'حذف'}
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -412,6 +486,47 @@ export default function MyAppointments() {
           )}
         </section>
       </div>
+
+      {appointmentPendingDelete ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-appointment-title"
+          onClick={closeDeleteConfirmation}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="delete-appointment-title" className="text-xl font-bold text-slate-950">
+              حذف الموعد
+            </h2>
+            <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
+              هل أنت متأكد من حذف هذا الموعد؟
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeDeleteConfirmation}
+                disabled={deletingId === appointmentPendingDelete.id}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteAppointment()}
+                disabled={deletingId === appointmentPendingDelete.id}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-rose-600 px-5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingId === appointmentPendingDelete.id ? 'جاري الحذف...' : 'نعم، حذف'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {reschedulingAppointment ? (
         <div

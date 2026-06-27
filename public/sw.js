@@ -1,43 +1,25 @@
-/// <reference lib="webworker" />
-
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
-
-declare const self: ServiceWorkerGlobalScope & {
-  __WB_MANIFEST: Array<{
-    url: string
-    revision?: string | null
-  }>
-}
-
-type PushPayload = {
-  title?: string
-  body?: string
-  url?: string
-}
-
-precacheAndRoute(self.__WB_MANIFEST)
-cleanupOutdatedCaches()
-
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener('install', (event) => {
   console.log('[Tabibi SW] install')
   event.waitUntil(self.skipWaiting())
 })
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener('activate', (event) => {
   console.log('[Tabibi SW] activate')
   event.waitUntil(self.clients.claim())
 })
 
-self.addEventListener('push', (event: PushEvent) => {
+self.addEventListener('push', (event) => {
   console.log('[Tabibi SW] push event received')
 
-  let payload: PushPayload = {}
+  let payload = {}
 
   try {
-    payload = event.data?.json() as PushPayload
+    payload = event.data ? event.data.json() : {}
   } catch (error) {
     console.error('[Tabibi SW] failed to parse push payload as JSON', error)
-    payload = { body: event.data?.text() }
+    payload = {
+      body: event.data ? event.data.text() : undefined,
+    }
   }
 
   const title = payload.title || 'Tabibi'
@@ -58,7 +40,7 @@ self.addEventListener('push', (event: PushEvent) => {
   )
 })
 
-self.addEventListener('notificationclick', (event: NotificationEvent) => {
+self.addEventListener('notificationclick', (event) => {
   console.log('[Tabibi SW] notification click')
   event.notification.close()
 

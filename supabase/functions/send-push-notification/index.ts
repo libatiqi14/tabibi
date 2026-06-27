@@ -11,6 +11,7 @@ type PushRequest = {
 
 type PushSubscriptionRow = {
   id: string
+  user_id: string
   endpoint: string
   p256dh: string
   auth: string
@@ -18,6 +19,7 @@ type PushSubscriptionRow = {
 
 type PushResult = {
   subscription_id: string
+  endpoint: string
   success: boolean
   status_code: number | null
   deleted: boolean
@@ -66,18 +68,45 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-function getPushError(error: unknown) {
+function getWebPushError(error: unknown) {
   const pushError = error as {
     statusCode?: number
+    status?: number
     message?: string
     body?: string
   }
 
   return {
     statusCode:
-      typeof pushError.statusCode === 'number' ? pushError.statusCode : null,
+      typeof pushError.statusCode === 'number'
+        ? pushError.statusCode
+        : typeof pushError.status === 'number'
+          ? pushError.status
+          : null,
     message: pushError.body || pushError.message || 'Unknown Web Push error.',
   }
+}
+
+async function deleteInvalidSubscription(subscriptionId: string) {
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('id', subscriptionId)
+
+  if (error) {
+    console.error('[send-push-notification] failed to delete subscription', {
+      subscriptionId,
+      error: error.message,
+    })
+
+    return false
+  }
+
+  console.log('[send-push-notification] deleted invalid subscription', {
+    subscriptionId,
+  })
+
+  return true
 }
 
 serve(async (request) => {
@@ -90,42 +119,39 @@ serve(async (request) => {
   }
 
   try {
-    const payload = (await request.json()) as PushRequest
+    const requestPayload = (await request.json()) as PushRequest
+    const userId = requestPayload.user_id
+    const title = requestPayload.title || 'Tabibi'
+    const body = requestPayload.body || 'اختبار إشعار الهاتف'
+    const url = requestPayload.url || '/patient'
 
-    if (!payload.user_id || !payload.title || !payload.body) {
-      return jsonResponse(
-        { error: 'user_id, title, and body are required.' },
-        400,
-      )
-    }
-
-    console.log('Fetching push subscriptions', {
-      userId: payload.user_id,
-      title: payload.title,
-      url: payload.url ?? '/patient',
+    console.log('[send-push-notification] request received', {
+      userId,
+      title,
+      bodyLength: body.length,
+      url,
     })
+
+    if (!userId) {
+      return jsonResponse({ error: 'user_id is required.' }, 400)
+    }
 
     const { data, error } = await supabase
       .from('push_subscriptions')
-      .select('id, endpoint, p256dh, auth')
-      .eq('user_id', payload.user_id)
+      .select('id, user_id, endpoint, p256dh, auth')
+      .eq('user_id', userId)
 
     if (error) {
-      console.error('Failed to fetch push subscriptions', error)
+      console.error('[send-push-notification] failed to fetch subscriptions', error)
       throw new Error(error.message)
     }
 
     const subscriptions = (data ?? []) as PushSubscriptionRow[]
+    const notificationPayload = JSON.stringify({ title, body, url })
 
-    console.log('Push subscriptions found', {
-      userId: payload.user_id,
+    console.log('[send-push-notification] subscriptions found', {
+      userId,
       count: subscriptions.length,
-    })
-
-    const notificationPayload = JSON.stringify({
-      title: payload.title,
-      body: payload.body,
-      url: payload.url ?? '/patient',
     })
 
     const results = await Promise.all(
@@ -142,55 +168,41 @@ serve(async (request) => {
             notificationPayload,
           )
 
-          console.log('Push notification sent', {
+          console.log('[send-push-notification] push sent', {
             subscriptionId: subscription.id,
-            statusCode: response.statusCode,
+            endpoint: subscription.endpoint,
+            statusCode: response.statusCode ?? null,
           })
 
           return {
             subscription_id: subscription.id,
+            endpoint: subscription.endpoint,
             success: true,
             status_code: response.statusCode ?? null,
             deleted: false,
             error: null,
           }
         } catch (error) {
-          const pushError = getPushError(error)
+          const pushError = getWebPushError(error)
           const shouldDelete =
             pushError.statusCode === 400 ||
             pushError.statusCode === 404 ||
             pushError.statusCode === 410
+          const deleted = shouldDelete
+            ? await deleteInvalidSubscription(subscription.id)
+            : false
 
-          console.error('Push notification failed', {
+          console.error('[send-push-notification] push failed', {
             subscriptionId: subscription.id,
+            endpoint: subscription.endpoint,
             statusCode: pushError.statusCode,
             error: pushError.message,
-            deletingSubscription: shouldDelete,
+            deleted,
           })
-
-          let deleted = false
-
-          if (shouldDelete) {
-            const { error: deleteError } = await supabase
-              .from('push_subscriptions')
-              .delete()
-              .eq('id', subscription.id)
-
-            if (deleteError) {
-              console.error('Failed to delete invalid push subscription', {
-                subscriptionId: subscription.id,
-                error: deleteError.message,
-              })
-            } else {
-              deleted = true
-              console.log('Invalid push subscription deleted', {
-                subscriptionId: subscription.id,
-              })
-            }
-          }
 
           return {
             subscription_id: subscription.id,
+            endpoint: subscription.endpoint,
             success: false,
             status_code: pushError.statusCode,
             deleted,
@@ -203,23 +215,18 @@ serve(async (request) => {
     const sent = results.filter((result) => result.success).length
     const failed = results.length - sent
 
-    console.log('Push notification request complete', {
-      userId: payload.user_id,
+    console.log('[send-push-notification] request complete', {
+      userId,
       sent,
       failed,
     })
 
-    return jsonResponse({
-      sent,
-      failed,
-      results,
-    })
+    return jsonResponse({ sent, failed, results })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown push error.'
+    const message =
+      error instanceof Error ? error.message : 'Unknown push notification error.'
 
-    console.error('send-push-notification failed', {
-      error: message,
-    })
+    console.error('[send-push-notification] unexpected failure', message)
 
     return jsonResponse(
       {

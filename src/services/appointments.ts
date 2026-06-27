@@ -101,6 +101,20 @@ export async function cancelAppointment(id: string): Promise<Appointment> {
   return data as Appointment
 }
 
+export async function deletePatientAppointment(id: string): Promise<void> {
+  const patientId = await getCurrentUserId()
+
+  const { error } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('id', id)
+    .eq('patient_id', patientId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+}
+
 export async function rescheduleAppointment(
   appointmentId: string,
   newDate: string,

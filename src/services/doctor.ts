@@ -327,23 +327,30 @@ export async function updateAppointmentStatus(
 
   const [appointmentWithPatient] = await attachPatientProfiles([data as Appointment])
 
-  if (status === 'confirmed') {
+  if (status === 'confirmed' || status === 'cancelled') {
+    const pushBody =
+      status === 'confirmed'
+        ? 'تم تأكيد موعدك الطبي من طرف الطبيب.'
+        : 'تم إلغاء موعدك الطبي.'
+
     const { error: pushError } = await supabase.functions.invoke(
       'send-push-notification',
       {
         body: {
           user_id: appointmentWithPatient.patient_id,
-          appointment_id: appointmentWithPatient.id,
-          title: 'تم تأكيد موعدك',
-          body: 'تم تأكيد موعدك من طرف الطبيب.',
+          title: 'Tabibi',
+          body: pushBody,
           url: '/patient/dashboard',
-          role: 'patient',
         },
       },
     )
 
     if (pushError) {
-      console.error('Appointment confirmation push failed', pushError)
+      console.error('Appointment status push failed', {
+        appointmentId: appointmentWithPatient.id,
+        status,
+        error: pushError,
+      })
     }
   }
 

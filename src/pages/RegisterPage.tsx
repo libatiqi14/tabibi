@@ -151,6 +151,15 @@ export default function RegisterPage() {
         })
       }
 
+      if (role === 'doctor') {
+        resetForm()
+        setSuccessMessage(
+          'تم إنشاء حساب الطبيب بنجاح. سيظهر حسابك للمرضى بعد موافقة الإدارة.',
+        )
+        setStatusMessage('')
+        return
+      }
+
       setStatusMessage('جاري تسجيل الدخول...')
 
       const {
@@ -164,7 +173,7 @@ export default function RegisterPage() {
       }
 
       resetForm()
-      navigate(role === 'doctor' ? '/doctor' : '/patient', { replace: true })
+      navigate('/patient', { replace: true })
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'تعذر إنشاء الحساب. يرجى المحاولة مرة أخرى.'

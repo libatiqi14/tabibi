@@ -139,6 +139,7 @@ export default function AdminDashboard() {
   const [viewedPatient, setViewedPatient] = useState<AdminPatient | null>(null)
   const [openSections, setOpenSections] = useState({
     stats: true,
+    pendingDoctors: true,
     doctors: false,
     patients: false,
     appointments: false,
@@ -441,6 +442,92 @@ export default function AdminDashboard() {
                 </article>
               ))}
             </div>
+          )}
+        </SectionShell>
+
+        <SectionShell
+          title="الأطباء بانتظار المراجعة"
+          description="راجع حسابات الأطباء الجدد وفعّل الحسابات المناسبة قبل ظهورها للمرضى."
+          icon="🕒"
+          open={openSections.pendingDoctors}
+          onToggle={() => toggleSection('pendingDoctors')}
+        >
+          {loading ? (
+            <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+              جاري تحميل الأطباء بانتظار المراجعة...
+            </p>
+          ) : inactiveDoctors.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {inactiveDoctors.map((doctor) => (
+                <article
+                  key={doctor.id}
+                  className="rounded-2xl border border-amber-100 bg-amber-50/40 p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-black text-slate-950">
+                        {doctor.full_name}
+                      </h3>
+                      <p className="mt-1 text-sm font-bold text-teal-700">
+                        {doctor.specialty}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
+                      بانتظار المراجعة
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid gap-2 text-sm text-slate-700">
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="font-bold text-slate-500">المدينة</dt>
+                      <dd className="font-semibold">{doctor.city ?? 'غير متوفر'}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="font-bold text-slate-500">البريد</dt>
+                      <dd className="truncate font-semibold">
+                        {doctor.email ?? 'غير متوفر'}
+                      </dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="font-bold text-slate-500">الهاتف</dt>
+                      <dd className="font-semibold">{doctor.phone ?? 'غير متوفر'}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="font-bold text-slate-500">تاريخ التسجيل</dt>
+                      <dd className="font-semibold">
+                        {doctor.created_at
+                          ? dateFormatter.format(new Date(doctor.created_at))
+                          : 'غير متوفر'}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => void handleToggleDoctorStatus(doctor)}
+                      disabled={updatingDoctorId === doctor.id}
+                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-emerald-700 px-4 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {updatingDoctorId === doctor.id
+                        ? 'جاري التفعيل...'
+                        : 'تفعيل الطبيب'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDoctorProfile(doctor)}
+                      className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      عرض الملف
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg bg-slate-50 px-4 py-8 text-center text-sm font-semibold text-slate-600">
+              لا يوجد أطباء بانتظار المراجعة حالياً.
+            </p>
           )}
         </SectionShell>
 

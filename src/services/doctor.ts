@@ -84,7 +84,7 @@ export async function createDoctorProfile({
     clinic_name: clinicName ?? null,
     phone: phone ?? null,
     email: email ?? null,
-    active: true,
+    active: false,
   }
 
   console.log('DOCTOR CREATION PAYLOAD', payload)
